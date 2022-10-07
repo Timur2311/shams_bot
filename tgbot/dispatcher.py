@@ -46,10 +46,10 @@ def setup_dispatcher(dp):
 
     
     # EXAM HANDLERS
-    dp.add_handler(CallbackQueryHandler(
-        exam_handler.exam_callback, pattern=r"passing-test-"))
-    dp.add_handler(CallbackQueryHandler(
-        exam_handler.exam_confirmation, pattern=r"test-confirmation-"))
+    # dp.add_handler(CallbackQueryHandler(
+    #     exam_handler.exam_callback, pattern=r"passing-test-"))
+    # dp.add_handler(CallbackQueryHandler(
+    #     exam_handler.exam_confirmation, pattern=r"test-confirmation-"))
     
     dp.add_handler(PollHandler(exam_handler.poll_handler,
                    pass_chat_data=True, pass_user_data=True))
@@ -57,16 +57,24 @@ def setup_dispatcher(dp):
     dp.add_error_handler(error.send_stacktrace_to_tg_chat)
     
     
+    selection_handlers = [
+        MessageHandler(Filters.text(static_texts.TEEST), exam_handler.passing_test),
+        MessageHandler(Filters.text(static_texts.CHALLENGE), challenge_handlers.challenges_list)
+    ]
+    
+    
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', onboarding_handlers.command_start)],
         states={
-            consts.PASS_TEST: [MessageHandler(Filters.text(static_texts.TEEST), exam_handler.passing_test),
+            consts.SELECTING_ACTION: selection_handlers,
+            consts.PASS_TEST: [
+                            CallbackQueryHandler(exam_handler.exam_callback, pattern=r"passing-test-"),
+                            CallbackQueryHandler(exam_handler.exam_confirmation, pattern=r"test-confirmation-"),
+                
                                MessageHandler(Filters.regex("[-bosqich]+$"), exam_handler.stage_exams),
                                ],
-            consts.SHARING_CHALLENGE: [MessageHandler(Filters.text(static_texts.CHALLENGE), challenge_handlers.challenges_list)],
-            consts.LEADERBOARD: [
-                
-            ],
+            consts.SHARING_CHALLENGE: [],
+            consts.LEADERBOARD: [],
             consts.CONTACTING: [],
         },
         fallbacks=[],

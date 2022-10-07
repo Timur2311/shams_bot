@@ -49,7 +49,7 @@ def stage_exams(update: Update, context: CallbackContext) -> None:
         
     update.message.reply_text("Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
     
-    return ConversationHandler.END
+    return consts.PASS_TEST
 
 
 
