@@ -1,12 +1,13 @@
 
 from django.utils import timezone
-from telegram import ParseMode, Update, ReplyKeyboardRemove
-from telegram.ext import CallbackContext
+from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import CallbackContext, ConversationHandler
+from tgbot import consts
 
 from tgbot.handlers.exam import static_text
 from tgbot.models import User
 from exam.models import Exam, UserExam
-from question.models import Question
+from exam.models import Question
 from tgbot.handlers.exam import keyboards
 from tgbot.handlers.exam import helpers
 from tgbot.handlers import onboarding
@@ -31,6 +32,27 @@ def exam_start(update: Update, context: CallbackContext) -> None:
             text=static_text.exam_start, reply_markup=inline_keyboard)
 
 
+def passing_test(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
+        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],
+        ], resize_keyboard=True))
+    
+    return consts.PASS_TEST
+
+def stage_exams(update: Update, context: CallbackContext) -> None:
+    stage = update.message.text[0]
+    
+    exams = Exam.objects.filter(stage = stage)
+    buttons = []
+    for exam in exams:
+        buttons.append([InlineKeyboardButton(f"{exam.tour}-tur savollari", callback_data=f"passing-test-{exam.id}-{update.message.from_user.id}")])
+        
+    update.message.reply_text("Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
+    
+    return ConversationHandler.END
+
+
+
 def leader(update: Update, context: CallbackContext) -> None:
     user_exams = UserExam.objects.all().order_by("-score")
     text = ""
@@ -44,17 +66,18 @@ def exam_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     data = update.callback_query.data.split("-")
     exam_id = data[2]
+    user_id =  data[3]
     
 
     query.answer()
     exam = Exam.objects.get(id=exam_id)
-    text = f"{exam.title}\n\n<i>{exam.content}</i>\n\n<b>Imtixonni boshlaymizmi?</b>"
+    text = f"<b>{exam.title}</b> \n\n<b>Testni boshlaymizmi?</b>"
     context.bot.edit_message_text(
         text=text,
         chat_id=update.callback_query.message.chat_id,
         message_id=update.callback_query.message.message_id,
         parse_mode=ParseMode.HTML,
-        reply_markup=keyboards.exam_start_confirmation(exam)
+        reply_markup=keyboards.test_start_confirmation(exam)
     )
 
 

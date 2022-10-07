@@ -1,29 +1,113 @@
-from enum import auto
+
 from django.db import models
-from question.models import Question, QuestionOption
+
 from tgbot.models import User
 # Create your models here.
 
 
+
+# Create your models here.
+
+SINGLE = "single"
+MULTIPLE = "multiple"
+QUESTION_CHOICE = (
+    (SINGLE, "Bittalik savollar"),
+    (MULTIPLE, "Ko'p savollar"),
+)
+
+
+ONE = '1'
+TWO = '2'
+THREE = '3'
+FOUR = '4'
+FIVE = '5'
+SIX = '6'
+SEVEN = '7'
+EIGHT = '8'
+NINE = '9'
+TEN = '10'
+
+
+
+
+EXAM_TOUR_CHOISES = (
+    (ONE, "1"),
+    (TWO, "2"),
+    (THREE, "3"),
+    (FOUR, "4"),
+    (FIVE, "5"),
+    (SIX, "6"),
+    (SEVEN, "7"),
+    (EIGHT, "8"),
+    (NINE, "9"),
+    (TEN, "10"),
+)
+
+EXAM_STAGE_CHOICES = (
+    (ONE, "1"),
+    (TWO, "2"),
+    (THREE, "3"),
+    (FOUR, "4"),
+    (FIVE, "5"),
+)
+
+
+class Question(models.Model):
+    content = models.TextField(max_length=2048)
+    stage =  models.CharField(choices = EXAM_STAGE_CHOICES, max_length = 16)
+    tour = models.CharField(choices = EXAM_TOUR_CHOISES, max_length = 16)
+    true_answered_users = models.ManyToManyField(User)
+    time = models.IntegerField(
+        "Savolar uchun mo'ljallangan vaqt(sekund)", default=10)
+    true_definition = models.TextField(max_length = 65536)
+    
+    def add_question_options(self, content, is_correct=False):
+        QuestionOption.objects.create(question = self, content = content, is_correct = is_correct)
+    
+    def create_exam(self, exam_title):
+        if  Exam.objects.filter(title = exam_title).exists():
+            exam = Exam.objects.get(title=exam_title)
+            exam.questions.add(self)            
+        else:
+            exam = Exam.objects.create(title = exam_title, stage = self.stage, tour = self.tour)
+            exam.questions.add(self)
+        
+        
+
+
+class QuestionOption(models.Model):
+    content = models.CharField(max_length=256)
+    is_correct = models.BooleanField(default=False)
+    question = models.ForeignKey(Question,related_name="options", on_delete=models.CASCADE)
+
+
+
+
 class Exam(models.Model):
     title = models.CharField(max_length=256)
-    content = models.TextField(max_length=2048)
+    content = models.TextField(max_length=2048, null=True, blank=True)
+    stage = models.CharField(max_length = 16, default = 0)
+    tour = models.CharField(max_length = 16, default = 0)
     questions = models.ManyToManyField(Question)
     questions_count = models.IntegerField(
-        "Savollar soni", default=20)
-    start_datetime = models.DateTimeField()
-    end_datetime = models.DateTimeField()
+        "Savollar soni", default=10)    
+    
     duration = models.IntegerField("Imtixon vaqti (minut)", default=20)
 
     class Meta:
-        verbose_name = "Imtixon"
-        verbose_name_plural = "Imtixonlar"
+        verbose_name = "Imtihon"
+        verbose_name_plural = "Imtihonlar"
+
+
+    
+            
 
     def create_user_exam(self, user):
         userexam = UserExam.objects.create(exam=self, user=user)
         userexam.questions.set(self.questions.all(
-        ).order_by("?")[:self.questions_count])
+        ).order_by("?")[:10])
         return userexam
+    
 
 
 class UserExam(models.Model):

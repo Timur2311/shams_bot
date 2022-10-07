@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Web\Bots\clc_workshop\CLC\quiz\env"
+VIRTUAL_ENV="C:\Web\Bots\Burhoniddin\shams_bot\env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

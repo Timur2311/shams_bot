@@ -7,6 +7,7 @@ github_button_text = "GitHub"
 secret_level_button_text = "Secret level🗝"
 
 
-EXAM_TITLE = "Imtixon ⏳"
-BATTLE_TITLE = "Leader ⚔"
-LEADER = "Leader ⚔"
+CONTACTUS = "Bog'lanish"
+LEADER = "Leaderlar"
+CHALLENGE = "Bellashuv"
+TEEST = "Test ishlash"

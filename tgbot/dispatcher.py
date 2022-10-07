@@ -10,7 +10,7 @@ from telegram import Bot, Update, BotCommand
 from telegram.ext import (
     Updater, Dispatcher, Filters,
     CommandHandler, MessageHandler,
-    CallbackQueryHandler,PollHandler
+    CallbackQueryHandler,PollHandler, ConversationHandler, InlineQueryHandler
 )
 
 from core.celery import app  # event processing in async mode
@@ -21,7 +21,11 @@ from tgbot.handlers.admin import handlers as admin_handlers
 from tgbot.handlers.location import handlers as location_handlers
 from tgbot.handlers.onboarding import handlers as onboarding_handlers
 from tgbot.handlers.exam import handlers as exam_handler
+from tgbot.handlers.challenge import handlers as challenge_handlers
+
 from tgbot.handlers.onboarding import static_text as onboarding_static_text
+from tgbot import consts
+from tgbot.handlers.onboarding import static_text as static_texts
 from tgbot.handlers.broadcast_message import handlers as broadcast_handlers
 from tgbot.handlers.onboarding.manage_data import SECRET_LEVEL_BUTTON
 from tgbot.handlers.broadcast_message.manage_data import CONFIRM_DECLINE_BROADCAST
@@ -33,27 +37,42 @@ def setup_dispatcher(dp):
     Adding handlers for events from Telegram
     """
     # onboarding
-    dp.add_handler(CommandHandler("start", onboarding_handlers.command_start))
+    # dp.add_handler(CommandHandler("start", onboarding_handlers.command_start))
 
     # admin commands
     dp.add_handler(CommandHandler("admin", admin_handlers.admin))
     dp.add_handler(CommandHandler("stats", admin_handlers.stats))
     dp.add_handler(CommandHandler('export_users', admin_handlers.export_users))
 
-    dp.add_handler(MessageHandler(Filters.text(
-        onboarding_static_text.EXAM_TITLE), exam_handler.exam_start))
-    dp.add_handler(MessageHandler(Filters.text(
-        onboarding_static_text.LEADER), exam_handler.leader))
+    
     # EXAM HANDLERS
     dp.add_handler(CallbackQueryHandler(
-        exam_handler.exam_callback, pattern=r"exam-start-"))
+        exam_handler.exam_callback, pattern=r"passing-test-"))
     dp.add_handler(CallbackQueryHandler(
-        exam_handler.exam_confirmation, pattern=r"exam-confirmation-"))
+        exam_handler.exam_confirmation, pattern=r"test-confirmation-"))
     
     dp.add_handler(PollHandler(exam_handler.poll_handler,
                    pass_chat_data=True, pass_user_data=True))
     # handling errors
     dp.add_error_handler(error.send_stacktrace_to_tg_chat)
+    
+    
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', onboarding_handlers.command_start)],
+        states={
+            consts.PASS_TEST: [MessageHandler(Filters.text(static_texts.TEEST), exam_handler.passing_test),
+                               MessageHandler(Filters.regex("[-bosqich]+$"), exam_handler.stage_exams),
+                               ],
+            consts.SHARING_CHALLENGE: [MessageHandler(Filters.text(static_texts.CHALLENGE), challenge_handlers.challenges_list)],
+            consts.LEADERBOARD: [
+                
+            ],
+            consts.CONTACTING: [],
+        },
+        fallbacks=[],
+    )
+
+    dp.add_handler(conv_handler)
 
     return dp
 

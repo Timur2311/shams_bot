@@ -13,7 +13,7 @@ whitenoise
 # Django 3.0 async requirements
 gunicorn
 uvicorn
-uvloop
+# uvloop
 httptools
 
 # Databases
@@ -22,11 +22,11 @@ dj-database-url
 
 # Distributed tasks
 celery
-redis
+# redis
 django-celery-beat
 
 # Telegram
-python-telegram-bot
+python-telegram-bot==13.13
 
 # monitoring
 # sentry-sdk
