@@ -1,5 +1,7 @@
 
+from email.policy import default
 from django.db import models
+from challenge.models import Question
 from tgbot.models import User
 from tgbot import consts
 
@@ -24,9 +26,8 @@ USER_TASK_STATUS = (
 
 
 class Challenge(models.Model):
-    title = models.CharField(max_length=200, verbose_name="Challenge Nomi")
-    content = models.TextField(max_length=4096, null=True)   
-    
+    stage = models.CharField(max_length = 16, null=True, blank=True)
+    questions = models.ManyToManyField(Question)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -35,10 +36,10 @@ class Challenge(models.Model):
         verbose_name_plural = "Challengelar"
         
     
-    def create_user_challenge(self, telegram_id, challenge, status=consts.PUBLIC):
-        # super().create_user_challenge(self, telegram_id, status=PUBLIC)
-        user_challenge = UserChallenge.objects.create(user=User.objects.get(user_id=telegram_id), challenge = challenge, status=status)           
-        user_challenge.users.add(User.objects.get(user_id = telegram_id))
+    def create_user_challenge(self, telegram_id, challenge):
+        user_challenge = UserChallenge.objects.create(user=User.objects.get(user_id=telegram_id), challenge = challenge)           
+        user_challenge.questions.set(self.questions.all(
+        ).order_by("?")[:10])
         return user_challenge
     
     
@@ -49,112 +50,38 @@ class UserChallenge(models.Model):
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     users = models.ManyToManyField(User, related_name="user_challenges")
     is_active = models.BooleanField(default=False) 
-    status = models.CharField(max_length=15, choices=CHALLENGE_STATUS, default=consts.PUBLIC) # public hammaga , private ma'lum userlarga
     
     started_at = models.DateTimeField(null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def create_answers(self):
+        challenge_answers = []
+        for question in self.questions.all().order_by("?"):
+            challenge_answers.append(UserChallengeAnswer(
+                user_challenge=self, question=question))
+        UserChallengeAnswer.objects.bulk_create(challenge_answers)
 
-    
-    def create_task(self,challenge_id, telegram_id):
-        task = Task.objects.create(user = User.objects.get(user_id = telegram_id) ,user_challenge = UserChallenge.objects.get(id = challenge_id))
-        return task
-    
-    
-        
-    
-    
-        
+    def last_unanswered_question(self):
+        user_challenge_answer = self.answer.all().exclude(answered=True).first()
+        return user_challenge_answer.question if user_challenge_answer else None
 
-    
-         
+    def last_unanswered(self):
+        user_challenge_answer = self.answer.all().exclude(answered=True).first()
+        return user_challenge_answer
 
-        
-class Task(models.Model):
+
+class UserChallengeAnswer(models.Model):
+    user_challenge = models.ForeignKey(
+        UserChallenge, on_delete=models.CASCADE, related_name="answer")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    number = models.IntegerField(default=1)
-    content = models.TextField(max_length=4096, null=True, blank=True)
-    
-    user_challenge = models.ForeignKey(UserChallenge, on_delete=models.CASCADE, related_name="tasks")
-    
-    # start_time 
-    # end_time
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    def add_title(self, title):
-        self.title =  title
-        
-    def add_content(self, content):
-        self.title =  content
-        
-    
-    
-    def create_user_task(self):
-        for user in self.user_challenge.users.all():
-            user_task = UserTask.objects.filter(task=self).filter(user=user).count()
-            if user_task==0:
-                UserTask.objects.create(task = self, user=user)
-    
-    def save(self, *args, **kwargs):        
-        super(Task, self).save(*args, **kwargs)
-        
-    def update(self, *args, **kwargs):
-        super(Task,self).update(*args, **kwargs)
-        
-class UserTask(models.Model):
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="user_tasks")
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    status = models.CharField(max_length=15, choices=USER_TASK_STATUS, default=NOT_FINISHED) 
-    
-    def create_progress(self):
-        Progress.objects.create(user_task = self )
-        return self
-    
-    
-    def create_rate(self, user):
-        Rate.objects.create(user = user, user_challenge = self.task.user_challenge)
-        
-    
-    def increase_stars(self, user):
-        rate = Rate.objects.filter(user=user).get(user_challenge=self.task.user_challenge)
-        rate.stars_count+=1
-        rate.old_stars_count+=1
-        rate.save()
-        
-    def decrease_stars(self, user):
-        rate = Rate.objects.filter(user=user).get(user_challenge=self.task.user_challenge)
-        rate.stars_count=0
-        rate.save()
-        
-    
-    
-    
-class Progress(models.Model):
-    challenge = models.ForeignKey(UserChallenge, on_delete=models.CASCADE, related_name="challenge_progress")
-    user_task = models.ForeignKey(UserTask, on_delete=models.CASCADE, related_name="task_progresses")   
-    image = models.CharField(max_length=4096, null=True)
-    content = models.TextField(max_length=4096, null=True) 
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    def add_image(self):
-        pass
-    
-    def add_content(self):
-        pass
-    
-    def save(self, *args, **kwargs):        
-        super(Progress, self).save(*args, **kwargs)
-        
-    def update(self, *args, **kwargs):
-        super(Progress,self).update(*args, **kwargs)
-    
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    option_ids = models.CharField(max_length=255, null=True)
+    answered = models.BooleanField(default=False)
+    is_correct = models.BooleanField(default=False)
 
-        
+    
 class Rate(models.Model):
     stars_count = models.IntegerField(default=0)
     old_stars_count = models.IntegerField(default=0)    

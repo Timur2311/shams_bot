@@ -1,4 +1,5 @@
 
+from re import L
 from django.utils import timezone
 from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import CallbackContext, ConversationHandler
@@ -92,21 +93,30 @@ def exam_confirmation(update: Update, context: CallbackContext) -> None:
     query.answer()
     if action_type == "start":
         exam = Exam.objects.get(id=exam_id)
-        user_exam = exam.create_user_exam(user)
-        user_exam.create_answers()
-        question = user_exam.last_unanswered_question()
+        user_exam, counter = exam.create_user_exam(user)
+        context.user_data['id'] = update.callback_query.from_user.id
+        if counter>0:
+            user_exam.create_answers()
+            question = user_exam.last_unanswered_question()
+            query.delete_message()
+            query.message.reply_text(
+            f"Test boshlandi!\n\n Testlar soni: {counter} ta", reply_markup=ReplyKeyboardRemove())
+            helpers.send_exam_poll(context, question, user.user_id)
+        elif counter == 0:
+            query.delete_message()
+            query.message.reply_text(
+            "Ushbu testdagi hamma savollarga to'g'ri javob bergansiz ", reply_markup=ReplyKeyboardRemove())
 
-        query.delete_message()
-        query.message.reply_text(
-            static_text.exam_start_after_click, reply_markup=ReplyKeyboardRemove())
+        
 
-        helpers.send_exam_poll(context, question, user.user_id)
+        
 
     elif action_type == "back":
         exam_start(update, context)
 
 
 def poll_handler(update: Update, context: CallbackContext) -> None:
+    print("\n\n\poll handlerga kirdi \n\n")
     # GETTING USER
     user_id = helpers.get_chat_id(update, context)
     user = User.objects.get(user_id=user_id)

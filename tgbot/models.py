@@ -24,6 +24,7 @@ class User(CreateUpdateTracker):
     last_name = models.CharField(max_length=256, **nb)
     language_code = models.CharField(max_length=8, help_text="Telegram client's lang", **nb)
     deep_link = models.CharField(max_length=64, **nb)
+    name = models.CharField(max_length=128, null=True, blank=True, default="IsmiGul")
 
     is_blocked_bot = models.BooleanField(default=False)
 
@@ -38,7 +39,7 @@ class User(CreateUpdateTracker):
     @classmethod
     def get_user_and_created(cls, update: Update, context: CallbackContext) -> Tuple[User, bool]:
         """ python-telegram-bot's Update, Context --> User instance """
-        data = extract_user_data_from_update(update)
+        data = extract_user_data_from_update(update, context)
         u, created = cls.objects.update_or_create(user_id=data["user_id"], defaults=data)
 
         if created:

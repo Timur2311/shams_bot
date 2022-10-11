@@ -2,6 +2,8 @@ import pandas as pd
 
 from exam.models import Question
 
+from group_challenge.models import Challenge
+
 def saving_data():
     workbook = pd.read_excel('media/questions/test.xlsx')
     print(workbook.head())
@@ -22,5 +24,18 @@ def saving_data():
             question.add_question_options(content = correct, is_correct=True)
             question.add_question_options(content = incorrect1)
             question.add_question_options(content = incorrect2)
+            
+            
+            challenge_count = Challenge.objects.filter(stage = stage).count()
+            
+            if challenge_count==0:
+                challenge = Challenge.objects.create(stage =stage)
+                challenge.questions.add(question) 
+            elif challenge_count>0:
+                challenge = Challenge.objects.get(stage =stage)
+                challenge.questions.add(question) 
+                
+        
+                
             
        

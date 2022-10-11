@@ -1,7 +1,8 @@
 
-from django.utils import timezone
-from telegram import ParseMode, Update, ReplyKeyboardRemove
+from uuid import uuid4
+from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle,InputTextMessageContent
 from telegram.ext import CallbackContext
+from group_challenge.models import Challenge, UserChallenge
 
 from tgbot.handlers.exam import static_text
 from tgbot.models import User
@@ -11,10 +12,97 @@ from tgbot.handlers.exam import keyboards
 from tgbot.handlers.exam import helpers
 from tgbot.handlers import onboarding
 from tgbot.handlers.onboarding.keyboards import make_keyboard_for_start_command
+from tgbot import consts
+
+
+
+def inlinequery(update: Update, context: CallbackContext) -> None:
+    query = update.inline_query.query
+
+    if query == "":
+        return
+    elif query =="1":
+        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
+    elif query =="2":
+        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
+    elif query =="3":
+        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"   
+    elif query =="4":
+        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"  
+    elif query =="5":
+        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
+        
+    results = []
+
+
+    user_id = update.inline_query.from_user.id
+    
+    user, created = User.get_user_and_created(update, context)
+    
+    user_challenge = UserChallenge.objects.filter(user__user_id=user_id).filter(challenge=Challenge.objects.get(stage = query)).filter(is_active = True)
+    
+
+    if created:
+        warning_text = "Siz ushbu botda yo'q ekansiz, botda sizning ismingiz \"IsmiGul\" bo'lib saqlandi. Ismingizni o'zgartirish uchun https://t.me/clc_challenge_bot botga o'tib /start deb yozing"
+    else:
+        warning_text = ""
+        
+        
+
+    results.append(
+        InlineQueryResultArticle(
+            id=str(uuid4()),
+            title=f"{user_challenge.challenge.title}",
+            input_message_content=InputTextMessageContent(
+                message_text=warning_text+text),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.ACCEPT, callback_data=f"challenge-received-{consts.ACCEPT}-{user_challenge.user.user_id}-{user_challenge.id}")],
+                                               [InlineKeyboardButton(
+                                                   text=consts.DECLINE, callback_data=f"challenge-received-{consts.DECLINE}-{user_challenge.user.user_id}-{user_challenge.id}")]
+                                               ])
+
+        )
+    )
+
+    update.inline_query.answer(results)
+
+    return consts.SELECTING_ACTION
+
 
 
 def challenges_list(update: Update, context: CallbackContext) -> None:
-    pass
+    update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
+        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],
+        ], resize_keyboard=True))
+    
+     
+    return consts.SHARING_CHALLENGE
+
+def stage_exams(update: Update, context: CallbackContext):
+    stage = update.message.text[0]
+    update.message.reply_text(f"Siz {stage}-bosqich testlari bilan do'stingiz bilan bellashmoqchisiz.\n\n{consts.SHARE} tugmasini bosib Challenge ni  do'stlaringiz bilan ulashing",
+                              reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.SHARE, switch_inline_query=f"{stage}")]]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def exam_start(update: Update, context: CallbackContext) -> None:
     """
@@ -62,7 +150,7 @@ def exam_callback(update: Update, context: CallbackContext) -> None:
 
 
 def exam_confirmation(update: Update, context: CallbackContext) -> None:
-    user, _ = User.get_user_and_created(update, context)
+    user = User.objects.get(user_id = update.callback_query.from_user.id)
 
     query = update.callback_query
     data = update.callback_query.data.split("-")

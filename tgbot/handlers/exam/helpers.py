@@ -4,14 +4,15 @@ def send_exam_poll(context, question, chat_id):
     options = []
     correct_option_id = 0
     for index, option, in enumerate(question.options.all().order_by("?")):
-        options.append(option.title)
+        options.append(option.content)
         if option.is_correct:
             correct_option_id = index
 
     message = context.bot.send_poll(chat_id,
-                                    question.title, options, type="quiz", correct_option_id=correct_option_id)
+                                    question.content, options, type="quiz", correct_option_id=correct_option_id)
     # SAVE POLL ID WITH CHAT ID
     context.bot_data.update({message.poll.id: message.chat.id})
+    
 
 
 def get_chat_id(update, context):

@@ -43,7 +43,8 @@ def setup_dispatcher(dp):
     dp.add_handler(CommandHandler("admin", admin_handlers.admin))
     dp.add_handler(CommandHandler("stats", admin_handlers.stats))
     dp.add_handler(CommandHandler('export_users', admin_handlers.export_users))
-
+    #inline_mode
+    dp.add_handler(InlineQueryHandler(challenge_handlers.inlinequery))
     
     # EXAM HANDLERS
     # dp.add_handler(CallbackQueryHandler(
@@ -73,7 +74,7 @@ def setup_dispatcher(dp):
                 
                                MessageHandler(Filters.regex("[-bosqich]+$"), exam_handler.stage_exams),
                                ],
-            consts.SHARING_CHALLENGE: [],
+            consts.SHARING_CHALLENGE: [MessageHandler(Filters.regex("[-bosqich]+$"), challenge_handlers.stage_exams)],
             consts.LEADERBOARD: [],
             consts.CONTACTING: [],
         },

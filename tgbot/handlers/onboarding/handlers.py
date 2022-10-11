@@ -21,6 +21,8 @@ def command_start(update: Update, context: CallbackContext) -> None:
 
     update.message.reply_text(text=text,
                               reply_markup=make_keyboard_for_start_command())
+    context.user_data["id"]=update.message.from_user.id
+    print(f"\n\n{context.user_data['id']}\n\n")
     
     return consts.SELECTING_ACTION
 
