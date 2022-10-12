@@ -87,3 +87,8 @@ def home_page(update: Update, context: CallbackContext):
                              reply_markup=make_keyboard_for_start_command())
 
     return consts.SELECTING_ACTION
+
+def back_to_home_page(update: Update, context: CallbackContext):
+    update.message.reply_text(text="Quyidagilardan birini tanlang⬇️",
+                                  reply_markup=make_keyboard_for_start_command())
+    return consts.SELECTING_ACTION

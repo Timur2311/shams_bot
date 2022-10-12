@@ -90,10 +90,19 @@ def setup_dispatcher(dp):
                     onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
                 MessageHandler(Filters.regex(
                     "[-bosqich]+$"), exam_handler.stage_exams),
+                CallbackQueryHandler(
+                    exam_handler.back_to_exam_stage, pattern=r"back-to-exam-stages-"),
+                MessageHandler(Filters.text(consts.BACK),
+                               onboarding_handlers.back_to_home_page),
+
             ],
             consts.SHARING_CHALLENGE: [MessageHandler(Filters.regex("[-bosqich]+$"), challenge_handlers.stage_exams),
                                        CallbackQueryHandler(
+                challenge_handlers.back_to_challenge_stage, pattern=r"revoke-challenge-"),
+                CallbackQueryHandler(
                 onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
+                MessageHandler(Filters.text(consts.BACK),
+                       onboarding_handlers.back_to_home_page),
             ],
             consts.LEADERBOARD: [],
             consts.CONTACTING: [],

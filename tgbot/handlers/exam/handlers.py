@@ -1,5 +1,7 @@
 
+from email import message
 from re import L
+from turtle import up
 from django.utils import timezone
 from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import CallbackContext, ConversationHandler
@@ -38,7 +40,7 @@ def exam_start(update: Update, context: CallbackContext) -> None:
 def passing_test(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
         [consts.FIRST], [consts.SECOND], [consts.THIRD], [
-            consts.FOURTH], [consts.FIFTH],
+            consts.FOURTH], [consts.FIFTH], [consts.BACK]
     ], resize_keyboard=True))
 
     return consts.PASS_TEST
@@ -58,12 +60,25 @@ def stage_exams(update: Update, context: CallbackContext) -> None:
         for exam in exams:
             buttons.append([InlineKeyboardButton(
                 f"{exam.tour}-tur savollari", callback_data=f"passing-test-{exam.id}-{update.message.from_user.id}")])
-
-        update.message.reply_text(
+        buttons.append([InlineKeyboardButton(consts.BACK, callback_data=f"back-to-exam-stages-{update.message.from_user.id}")])
+        exam_message = update.message.reply_text(
             "Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
+        context.user_data["exam_stage_message_id"] = exam_message.message_id
 
     return consts.PASS_TEST
 
+
+def back_to_exam_stage(update: Update, context: CallbackContext):
+    
+    data = update.callback_query.data.split("-")
+    user_id = data[4]
+    
+    context.bot.delete_message(chat_id = update.callback_query.message.chat_id, message_id =context.user_data["exam_stage_message_id"])
+    context.bot.send_message(chat_id = user_id, text = "Quyidagilardan birini tanlang⬇️",reply_markup=ReplyKeyboardMarkup([
+        [consts.FIRST], [consts.SECOND], [consts.THIRD], [
+            consts.FOURTH], [consts.FIFTH], [consts.BACK]
+    ], resize_keyboard=True))
+    pass
 
 def leader(update: Update, context: CallbackContext) -> None:
     user_exams = UserExam.objects.all().order_by("-score")

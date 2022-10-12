@@ -1,7 +1,7 @@
 
 from uuid import uuid4
 from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle,InputTextMessageContent, ParseMode
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, ConversationHandler
 from group_challenge.models import Challenge, UserChallenge
 
 from tgbot.handlers.exam import static_text
@@ -72,7 +72,7 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
 def challenges_list(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
-        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],
+        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],[consts.BACK]
         ], resize_keyboard=True))
     
      
@@ -92,8 +92,11 @@ def stage_exams(update: Update, context: CallbackContext):
         user_challenge = challenge.create_user_challenge(user_id, challenge)
 
         
-        update.message.reply_text(f"Siz {stage}-bosqich testlari bilan do'stingiz bilan bellashmoqchisiz.\n\n{consts.SHARE} tugmasini bosib Challenge ni  do'stlaringiz bilan ulashing yoki <b>\"{consts.RANDOM_OPPONENT}\"</b> tugmasini bosing!",
-                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.SHARE, switch_inline_query=f"{stage}")],[InlineKeyboardButton(text=consts.RANDOM_OPPONENT, callback_data=f"{consts.RANDOM_OPPONENT}-{user_challenge.id}")]]), parse_mode=ParseMode.HTML)
+        challenge_stage = update.message.reply_text(f"Siz {stage}-bosqich testlari bilan do'stingiz bilan bellashmoqchisiz.\n\n{consts.SHARE} tugmasini bosib Challenge ni  do'stlaringiz bilan ulashing yoki <b>\"{consts.RANDOM_OPPONENT}\"</b> tugmasini bosing!",
+                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.SHARE, switch_inline_query=f"{stage}")],[InlineKeyboardButton(text=consts.RANDOM_OPPONENT, callback_data=f"{consts.RANDOM_OPPONENT}-{user_challenge.id}")],[InlineKeyboardButton(consts.REVOKE, callback_data=f"revoke-challenge-{user_challenge.id}-{user_id}")]]), parse_mode=ParseMode.HTML)
+        context.user_data['challenge_stage_message_id'] = challenge_stage.message_id
+        
+    return consts.SHARING_CHALLENGE
 
 def challenge_callback(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -125,8 +128,27 @@ def challenge_callback(update: Update, context: CallbackContext):
             query.edit_message_text(
                 f" <a href='tg://user?id={query.from_user.id}'>{user.name}</a> challenge ga qatnashishni qabul qilmadi.")
 
-
-
+def back_to_challenge_stage(update: Update, context: CallbackContext):
+    data = update.callback_query.data.split("-")
+    user_challenge_id = data[2]
+    user_id = data[3]
+    message_id = context.user_data["challenge_stage_message_id"]
+    
+    user_challenge = UserChallenge.objects.get(id = user_challenge_id)
+    user_challenge.delete()
+    
+    context.bot.delete_message(chat_id = update.callback_query.message.chat_id, message_id =context.user_data["challenge_stage_message_id"])
+    
+    
+    context.bot.send_message(chat_id = user_id, text = "Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
+        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],[consts.BACK]
+        ], resize_keyboard=True))
+    
+    return consts.SHARING_CHALLENGE
+    
+    
+    
+    
 
 
 
