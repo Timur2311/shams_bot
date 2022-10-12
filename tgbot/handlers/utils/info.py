@@ -21,7 +21,7 @@ def send_typing_action(func: Callable):
 
 def extract_user_data_from_update(update: Update, context: CallbackContext) -> Dict:
     """ python-telegram-bot's Update instance --> User info """
-    print(f"\n\nuser_data=={context.user_data}\n\n")
+    # print(f"\n\nuser_data=={context.user_data}\n\n")
     if update.effective_user is not None:
         user = update.effective_user.to_dict()
         return dict(

@@ -10,26 +10,20 @@ from telegram import Bot, Update, BotCommand
 from telegram.ext import (
     Updater, Dispatcher, Filters,
     CommandHandler, MessageHandler,
-    CallbackQueryHandler,PollHandler, ConversationHandler, InlineQueryHandler
+    CallbackQueryHandler, PollHandler, ConversationHandler, InlineQueryHandler
 )
 
 from core.celery import app  # event processing in async mode
 from core.settings import TELEGRAM_TOKEN, DEBUG
 
-from tgbot.handlers.utils import files, error
+from tgbot.handlers.utils import error
 from tgbot.handlers.admin import handlers as admin_handlers
-from tgbot.handlers.location import handlers as location_handlers
 from tgbot.handlers.onboarding import handlers as onboarding_handlers
 from tgbot.handlers.exam import handlers as exam_handler
 from tgbot.handlers.challenge import handlers as challenge_handlers
 
-from tgbot.handlers.onboarding import static_text as onboarding_static_text
 from tgbot import consts
 from tgbot.handlers.onboarding import static_text as static_texts
-from tgbot.handlers.broadcast_message import handlers as broadcast_handlers
-from tgbot.handlers.onboarding.manage_data import SECRET_LEVEL_BUTTON
-from tgbot.handlers.broadcast_message.manage_data import CONFIRM_DECLINE_BROADCAST
-from tgbot.handlers.broadcast_message.static_text import broadcast_command
 
 
 def setup_dispatcher(dp):
@@ -43,38 +37,64 @@ def setup_dispatcher(dp):
     dp.add_handler(CommandHandler("admin", admin_handlers.admin))
     dp.add_handler(CommandHandler("stats", admin_handlers.stats))
     dp.add_handler(CommandHandler('export_users', admin_handlers.export_users))
-    #inline_mode
+    # inline_mode
     dp.add_handler(InlineQueryHandler(challenge_handlers.inlinequery))
-    
+    dp.add_handler(CallbackQueryHandler(
+        challenge_handlers.challenge_callback, pattern=r"challenge-received-"))
     # EXAM HANDLERS
     # dp.add_handler(CallbackQueryHandler(
     #     exam_handler.exam_callback, pattern=r"passing-test-"))
     # dp.add_handler(CallbackQueryHandler(
     #     exam_handler.exam_confirmation, pattern=r"test-confirmation-"))
-    
+
     dp.add_handler(PollHandler(exam_handler.poll_handler,
                    pass_chat_data=True, pass_user_data=True))
     # handling errors
     dp.add_error_handler(error.send_stacktrace_to_tg_chat)
-    
-    
+
     selection_handlers = [
-        MessageHandler(Filters.text(static_texts.TEEST), exam_handler.passing_test),
-        MessageHandler(Filters.text(static_texts.CHALLENGE), challenge_handlers.challenges_list)
+        MessageHandler(Filters.text(static_texts.TEEST),
+                       exam_handler.passing_test),
+        MessageHandler(Filters.text(static_texts.CHALLENGE),
+                       challenge_handlers.challenges_list),
+        CallbackQueryHandler(
+            onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
+        CallbackQueryHandler(
+            onboarding_handlers.home_page, pattern=r"home-page"),
+
+
+
+        MessageHandler(Filters.text & ~Filters.command,
+                       onboarding_handlers.registration),
+
     ]
-    
-    
+
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', onboarding_handlers.command_start)],
+        entry_points=[CommandHandler(
+            'start', onboarding_handlers.command_start),
+
+            CallbackQueryHandler(
+            onboarding_handlers.home_page, pattern=r"home-page")
+
+
+        ],
+
         states={
             consts.SELECTING_ACTION: selection_handlers,
             consts.PASS_TEST: [
-                            CallbackQueryHandler(exam_handler.exam_callback, pattern=r"passing-test-"),
-                            CallbackQueryHandler(exam_handler.exam_confirmation, pattern=r"test-confirmation-"),
-                
-                               MessageHandler(Filters.regex("[-bosqich]+$"), exam_handler.stage_exams),
-                               ],
-            consts.SHARING_CHALLENGE: [MessageHandler(Filters.regex("[-bosqich]+$"), challenge_handlers.stage_exams)],
+                CallbackQueryHandler(
+                    exam_handler.exam_callback, pattern=r"passing-test-"),
+                CallbackQueryHandler(
+                    exam_handler.exam_confirmation, pattern=r"test-confirmation-"),
+                CallbackQueryHandler(
+                    onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
+                MessageHandler(Filters.regex(
+                    "[-bosqich]+$"), exam_handler.stage_exams),
+            ],
+            consts.SHARING_CHALLENGE: [MessageHandler(Filters.regex("[-bosqich]+$"), challenge_handlers.stage_exams),
+                                       CallbackQueryHandler(
+                onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
+            ],
             consts.LEADERBOARD: [],
             consts.CONTACTING: [],
         },

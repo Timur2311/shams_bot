@@ -25,10 +25,13 @@ ADD_AGAIN = "Yana vazifa qo'shish➕"
 ADD_TASK = "Vazifa qo'shish➕"
 
 SHARE = "Do'stlar bilan ulashish🔗"
+RANDOM_OPPONENT = "Tasodifiy raqib bilan"
 
 ACCEPT = "Challenge ga qo'shilish🤝"
 DECLINE = "Rad etish❌"
 
 
+CHANNEL_USERNAME = "@alamiy_uz"
 
-PASS_TEST, SHARING_CHALLENGE, LEADERBOARD, CONTACTING, SELECTING_ACTION = map(chr, range(5))
+
+PASS_TEST, SHARING_CHALLENGE, LEADERBOARD, CONTACTING, SELECTING_ACTION, FROM_CHAT = map(chr, range(6))

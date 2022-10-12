@@ -1,6 +1,6 @@
 
 from uuid import uuid4
-from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle,InputTextMessageContent
+from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle,InputTextMessageContent, ParseMode
 from telegram.ext import CallbackContext
 from group_challenge.models import Challenge, UserChallenge
 
@@ -13,7 +13,7 @@ from tgbot.handlers.exam import helpers
 from tgbot.handlers import onboarding
 from tgbot.handlers.onboarding.keyboards import make_keyboard_for_start_command
 from tgbot import consts
-
+from utils.check_subscription import check_subscription
 
 
 def inlinequery(update: Update, context: CallbackContext) -> None:
@@ -35,11 +35,12 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
     results = []
 
 
-    user_id = update.inline_query.from_user.id
+    # user_id = update.inline_query.from_user.id
     
     user, created = User.get_user_and_created(update, context)
     
-    user_challenge = UserChallenge.objects.filter(user__user_id=user_id).filter(challenge=Challenge.objects.get(stage = query)).filter(is_active = True)
+    user_challenge = UserChallenge.objects.filter(user=user).filter(challenge__stage = query).filter(is_active=True).first()
+    
     
 
     if created:
@@ -48,11 +49,11 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
         warning_text = ""
         
         
-
+ 
     results.append(
         InlineQueryResultArticle(
             id=str(uuid4()),
-            title=f"{user_challenge.challenge.title}",
+            title=f"{user_challenge.challenge.stage}",
             input_message_content=InputTextMessageContent(
                 message_text=warning_text+text),
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.ACCEPT, callback_data=f"challenge-received-{consts.ACCEPT}-{user_challenge.user.user_id}-{user_challenge.id}")],
@@ -78,12 +79,51 @@ def challenges_list(update: Update, context: CallbackContext) -> None:
     return consts.SHARING_CHALLENGE
 
 def stage_exams(update: Update, context: CallbackContext):
-    stage = update.message.text[0]
-    update.message.reply_text(f"Siz {stage}-bosqich testlari bilan do'stingiz bilan bellashmoqchisiz.\n\n{consts.SHARE} tugmasini bosib Challenge ni  do'stlaringiz bilan ulashing",
-                              reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.SHARE, switch_inline_query=f"{stage}")]]))
+    chat_member = context.bot.get_chat_member(
+        consts.CHANNEL_USERNAME, update.message.from_user.id)
+    if chat_member['status'] == "left":
+        u = User.objects.get(user_id=update.message.from_user.id)
+        check_subscription(update,context, u)
+    else:
+        stage = update.message.text[0]
+        challenge = Challenge.objects.get(stage=stage)
+        user_id=update.message.from_user.id
+        
+        user_challenge = challenge.create_user_challenge(user_id, challenge)
 
+        
+        update.message.reply_text(f"Siz {stage}-bosqich testlari bilan do'stingiz bilan bellashmoqchisiz.\n\n{consts.SHARE} tugmasini bosib Challenge ni  do'stlaringiz bilan ulashing yoki <b>\"{consts.RANDOM_OPPONENT}\"</b> tugmasini bosing!",
+                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.SHARE, switch_inline_query=f"{stage}")],[InlineKeyboardButton(text=consts.RANDOM_OPPONENT, callback_data=f"{consts.RANDOM_OPPONENT}-{user_challenge.id}")]]), parse_mode=ParseMode.HTML)
 
+def challenge_callback(update: Update, context: CallbackContext):
+    query = update.callback_query
+    data = update.callback_query.data.split("-")
+    received_type = data[2]
+    challenge_owner_id = data[3]
+    challenge_id = data[4]
+    user_challenge = UserChallenge.objects.get(id=challenge_id)
 
+    user, _ = User.get_user_and_created(update, context)
+
+    query_user_id = str(query.from_user.id)
+
+    if user.name == "IsmiGul":
+        context.user_data[consts.FROM_CHAT] = True
+        if query_user_id != challenge_owner_id:
+            query.edit_message_text(f"Siz https://t.me/clc_challenge_bot botimizda \"IsmiGul\" bo'lib qolib ketibsiz, iltimos botga o'tib ro'yxatdan o'ting. Ro'xatdan o'tib bo'lgach \"Tekshirish\" tugmasini bosing", reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Tekshirish", callback_data=f"check-{user_challenge.id}-{challenge_owner_id}-{user.user_id}-{received_type}")]]))
+
+    elif received_type == consts.ACCEPT:
+        print(
+            f"\n\nquery--->{type(query.from_user.id)}\nowner--->{type(challenge_owner_id)}")
+        if query_user_id != challenge_owner_id:
+            user_challenge.users.add(user)
+            query.edit_message_text(text=f"<a href='tg://user?id={query.from_user.id}'>{user.name}</a> qabul qilindi, challenge haqida to'liqroq ma'lumot uchun\"{user_challenge.challenge.title}\" ni ustiga bosing.",  reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton(f"{user_challenge.challenge.title}", callback_data=f"detail-page-{user_challenge.id}")]]), parse_mode=ParseMode.HTML)
+    elif received_type == consts.DECLINE:
+        if query_user_id != challenge_owner_id:
+            query.edit_message_text(
+                f" <a href='tg://user?id={query.from_user.id}'>{user.name}</a> challenge ga qatnashishni qabul qilmadi.")
 
 
 

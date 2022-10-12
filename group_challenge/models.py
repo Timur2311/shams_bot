@@ -1,9 +1,9 @@
 
 from email.policy import default
 from django.db import models
-from challenge.models import Question
 from tgbot.models import User
 from tgbot import consts
+from exam.models import Question
 
 
 
@@ -49,10 +49,11 @@ class UserChallenge(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owner")    
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     users = models.ManyToManyField(User, related_name="user_challenges")
-    is_active = models.BooleanField(default=False) 
-    
+    is_active = models.BooleanField(default=True) 
+    questions = models.ManyToManyField(Question)
     started_at = models.DateTimeField(null=True)
-    
+    is_user_finished = models.BooleanField(default=False)
+    is_opponent_finished = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

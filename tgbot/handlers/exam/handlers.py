@@ -11,7 +11,9 @@ from exam.models import Exam, UserExam
 from exam.models import Question
 from tgbot.handlers.exam import keyboards
 from tgbot.handlers.exam import helpers
-from tgbot.handlers import onboarding
+
+from utils.check_subscription import check_subscription
+
 from tgbot.handlers.onboarding.keyboards import make_keyboard_for_start_command
 
 
@@ -35,40 +37,48 @@ def exam_start(update: Update, context: CallbackContext) -> None:
 
 def passing_test(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
-        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],
-        ], resize_keyboard=True))
-    
+        [consts.FIRST], [consts.SECOND], [consts.THIRD], [
+            consts.FOURTH], [consts.FIFTH],
+    ], resize_keyboard=True))
+
     return consts.PASS_TEST
+
 
 def stage_exams(update: Update, context: CallbackContext) -> None:
-    stage = update.message.text[0]
-    
-    exams = Exam.objects.filter(stage = stage)
-    buttons = []
-    for exam in exams:
-        buttons.append([InlineKeyboardButton(f"{exam.tour}-tur savollari", callback_data=f"passing-test-{exam.id}-{update.message.from_user.id}")])
-        
-    update.message.reply_text("Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
-    
-    return consts.PASS_TEST
+    chat_member = context.bot.get_chat_member(
+        consts.CHANNEL_USERNAME, update.message.from_user.id)
+    if chat_member['status'] == "left":
+        u = User.objects.get(user_id=update.message.from_user.id)
+        check_subscription(update,context, u)
+    else:
+        stage = update.message.text[0]
 
+        exams = Exam.objects.filter(stage=stage)
+        buttons = []
+        for exam in exams:
+            buttons.append([InlineKeyboardButton(
+                f"{exam.tour}-tur savollari", callback_data=f"passing-test-{exam.id}-{update.message.from_user.id}")])
+
+        update.message.reply_text(
+            "Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
+
+    return consts.PASS_TEST
 
 
 def leader(update: Update, context: CallbackContext) -> None:
     user_exams = UserExam.objects.all().order_by("-score")
     text = ""
-    for index,user_exam in enumerate (user_exams):
-        text +=f"{index+1}. {user_exam.user} -  {user_exam.exam.title} - {user_exam.score} \n"
+    for index, user_exam in enumerate(user_exams):
+        text += f"{index+1}. {user_exam.user} -  {user_exam.exam.title} - {user_exam.score} \n"
     update.message.reply_text(
-            text=text)
+        text=text)
 
 
 def exam_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     data = update.callback_query.data.split("-")
     exam_id = data[2]
-    user_id =  data[3]
-    
+    user_id = data[3]
 
     query.answer()
     exam = Exam.objects.get(id=exam_id)
@@ -95,21 +105,17 @@ def exam_confirmation(update: Update, context: CallbackContext) -> None:
         exam = Exam.objects.get(id=exam_id)
         user_exam, counter = exam.create_user_exam(user)
         context.user_data['id'] = update.callback_query.from_user.id
-        if counter>0:
+        if counter > 0:
             user_exam.create_answers()
             question = user_exam.last_unanswered_question()
             query.delete_message()
             query.message.reply_text(
-            f"Test boshlandi!\n\n Testlar soni: {counter} ta", reply_markup=ReplyKeyboardRemove())
+                f"Test boshlandi!\n\n Testlar soni: {counter} ta", reply_markup=ReplyKeyboardRemove())
             helpers.send_exam_poll(context, question, user.user_id)
         elif counter == 0:
             query.delete_message()
             query.message.reply_text(
-            "Ushbu testdagi hamma savollarga to'g'ri javob bergansiz ", reply_markup=ReplyKeyboardRemove())
-
-        
-
-        
+                "Ushbu testdagi hamma savollarga to'g'ri javob bergansiz ", reply_markup=ReplyKeyboardRemove())
 
     elif action_type == "back":
         exam_start(update, context)
