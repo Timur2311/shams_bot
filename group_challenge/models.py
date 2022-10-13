@@ -46,23 +46,30 @@ class Challenge(models.Model):
 
 
 class UserChallenge(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owner")    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owner")   
+    opponent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="opponent", null=True, blank=True)     
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     users = models.ManyToManyField(User, related_name="user_challenges")
     is_active = models.BooleanField(default=True) 
     questions = models.ManyToManyField(Question)
-    started_at = models.DateTimeField(null=True)
+    user_started_at = models.DateTimeField(null=True)
+    opponent_started_at = models.DateTimeField(null=True)
     is_user_finished = models.BooleanField(default=False)
     is_opponent_finished = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def create_answers(self):
-        challenge_answers = []
+        challenge_answers_for_user = []
+        challenge_answers_for_opponent = []
         for question in self.questions.all().order_by("?"):
-            challenge_answers.append(UserChallengeAnswer(
-                user_challenge=self, question=question))
-        UserChallengeAnswer.objects.bulk_create(challenge_answers)
+            challenge_answers_for_user.append(UserChallengeAnswer(
+                user_challenge=self, question=question, user = self.user))
+            challenge_answers_for_opponent.append(UserChallengeAnswer(
+                user_challenge=self, question=question, user = self.opponent))
+            
+        UserChallengeAnswer.objects.bulk_create(challenge_answers_for_user)
+        UserChallengeAnswer.objects.bulk_create(challenge_answers_for_opponent)
 
     def last_unanswered_question(self):
         user_challenge_answer = self.answer.all().exclude(answered=True).first()

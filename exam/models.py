@@ -130,7 +130,7 @@ class UserExam(models.Model):
 
     def update_score(self):
         UserExam.objects.filter(id=self.id).update(
-            score=UserExamAnswer.objects.filter(is_correct=True, user_answer=self).count())
+            score=UserExamAnswer.objects.filter(is_correct=True, user_exam=self).count())
 
     def create_answers(self):
         exam_answers = []

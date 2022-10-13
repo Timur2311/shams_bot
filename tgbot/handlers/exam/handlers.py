@@ -157,7 +157,7 @@ def poll_handler(update: Update, context: CallbackContext) -> None:
     answer_question.answered = True
     answer_question.save()
 
-    # user_exam.update_score()
+    user_exam.update_score()
     user_exam = UserExam.objects.filter(user=user, is_finished=False).last()
 
     question = user_exam.last_unanswered_question()
