@@ -119,7 +119,7 @@ def exam_confirmation(update: Update, context: CallbackContext) -> None:
     if action_type == "start":
         exam = Exam.objects.get(id=exam_id)
         user_exam, counter = exam.create_user_exam(user)
-        context.user_data['id'] = update.callback_query.from_user.id
+        # context.bot_data[update.callback_query.from_user.id] = update.callback_query.from_user
         if counter > 0:
             user_exam.create_answers()
             question = user_exam.last_unanswered_question()
@@ -157,7 +157,7 @@ def poll_handler(update: Update, context: CallbackContext) -> None:
     answer_question.answered = True
     answer_question.save()
 
-    user_exam.update_score()
+    # user_exam.update_score()
     user_exam = UserExam.objects.filter(user=user, is_finished=False).last()
 
     question = user_exam.last_unanswered_question()

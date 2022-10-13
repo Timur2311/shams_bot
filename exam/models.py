@@ -113,9 +113,9 @@ class Exam(models.Model):
                     break
                 
         elif finished_exams.count() == 0:
-            counter = 2
+            counter = 10
             userexam.questions.set(self.questions.all(
-            ).order_by("?")[:2])
+            ).order_by("?")[:10])
         return userexam, counter
 
 
