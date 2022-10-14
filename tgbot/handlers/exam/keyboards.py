@@ -1,5 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup
+from tgbot import consts
 
 from tgbot.handlers.onboarding.manage_data import SECRET_LEVEL_BUTTON
 
@@ -13,10 +14,9 @@ def exam_keyboard(exams) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(buttons)
 
 
-def test_start_confirmation(exam) -> InlineKeyboardMarkup:
+def test_start_confirmation(exam, user_id) -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(
-            "🔙 Orqaga", callback_data=f'test-confirmation-{exam.id}-back'), InlineKeyboardButton(
+        [InlineKeyboardButton(consts.BACK, callback_data=f"stage-exams-{user_id}-{exam.stage}"), InlineKeyboardButton(
             "Boshlash", callback_data=f'test-confirmation-{exam.id}-start')]
     ]
     return InlineKeyboardMarkup(buttons)

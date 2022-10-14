@@ -94,24 +94,35 @@ class Exam(models.Model):
         verbose_name = "Imtihon"
         verbose_name_plural = "Imtihonlar"
 
-    def create_user_exam(self, user):
+    def create_user_exam(self, user,again=None):
         counter = 0
         userexam = UserExam.objects.create(exam=self, user=user)
+        if again:
+            UserExam.objects.filter(exam=self).filter(user = user).filter(is_finished=True).delete()
+        
+            
         finished_exams = UserExam.objects.filter(
             user=user).filter(exam=self).filter(is_finished=True)
-
+        # print(f'questions === {self.questions.all()}')
+        true_user_exam_answers = []
         if finished_exams.count() > 0:
-            finished_exam = finished_exams[0]
-            true_answered_questions = UserExamAnswer.objects.filter(
-                user_exam=finished_exam).filter(answered=True).filter(is_correct=True)
+            # print("if ni ichiga kirvotti")
+            for finished_exam in finished_exams:                
+                for user_exam_answer in UserExamAnswer.objects.filter(
+                    user_exam=finished_exam).filter(answered=True).filter(is_correct=True):
+                        true_user_exam_answers.append(user_exam_answer.question)
 
             for question in self.questions.all():
-                if question not in true_answered_questions:
-                    userexam.questions.add(question)
-                    counter += 1
-                if counter > 10:
-                    break
-                
+                if question in true_user_exam_answers:
+                    # print("true queston ekan")
+                    
+                    continue
+                else:
+                    if counter < 10:
+                        userexam.questions.add(question)
+                        counter += 1
+                    else:
+                        break
         elif finished_exams.count() == 0:
             counter = 10
             userexam.questions.set(self.questions.all(
@@ -129,8 +140,11 @@ class UserExam(models.Model):
     is_finished = models.BooleanField(default=False)
 
     def update_score(self):
-        UserExam.objects.filter(id=self.id).update(
-            score=UserExamAnswer.objects.filter(is_correct=True, user_exam=self).count())
+        score=UserExamAnswer.objects.filter(is_correct=True, user_exam=self).count()
+        
+        user_exam = UserExam.objects.get(id=self.id)
+        user_exam.score = score
+        user_exam.save()
         return self.score
 
     def create_answers(self):

@@ -41,30 +41,37 @@ def passing_test(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
         [consts.FIRST], [consts.SECOND], [consts.THIRD], [
             consts.FOURTH], [consts.FIFTH], [consts.BACK]
-    ], resize_keyboard=True))
+    ], resize_keyboard=True, one_time_keyboard=True))
 
     return consts.PASS_TEST
 
 
 def stage_exams(update: Update, context: CallbackContext) -> None:
+    u, _ = User.get_user_and_created(update, context)
+
     chat_member = context.bot.get_chat_member(
-        consts.CHANNEL_USERNAME, update.message.from_user.id)
+        consts.CHANNEL_USERNAME, u.user_id)
     if chat_member['status'] == "left":
-        u = User.objects.get(user_id=update.message.from_user.id)
         check_subscription(update, context, u)
     else:
-        stage = update.message.text[0]
+        if update.callback_query:
+            data = update.callback_query.data.split("-")
+            stage = data[3]
+        else:
+            stage = update.message.text[0]
 
         exams = Exam.objects.filter(stage=stage)
         buttons = []
         for exam in exams:
             buttons.append([InlineKeyboardButton(
-                f"{exam.tour}-tur savollari", callback_data=f"passing-test-{exam.id}-{update.message.from_user.id}")])
+                f"{exam.tour}-tur savollari", callback_data=f"passing-test-{exam.id}-{u.user_id}")])
         buttons.append([InlineKeyboardButton(
-            consts.BACK, callback_data=f"back-to-exam-stages-{update.message.from_user.id}")])
-        exam_message = update.message.reply_text(
-            "Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
-        context.user_data["exam_stage_message_id"] = exam_message.message_id
+            consts.BACK, callback_data=f"back-to-exam-stages-{u.user_id}")])
+        if update.callback_query:
+            update.callback_query.delete_message()
+        exam_message = context.bot.send_message(
+            chat_id=u.user_id, text="Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
+        context.user_data["message_id"] = exam_message.message_id
 
     return consts.PASS_TEST
 
@@ -75,7 +82,7 @@ def back_to_exam_stage(update: Update, context: CallbackContext):
     user_id = data[4]
 
     context.bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=context.user_data["exam_stage_message_id"])
+                               message_id=context.user_data["message_id"])
     context.bot.send_message(chat_id=user_id, text="Quyidagilardan birini tanlang⬇️", reply_markup=ReplyKeyboardMarkup([
         [consts.FIRST], [consts.SECOND], [consts.THIRD], [
             consts.FOURTH], [consts.FIFTH], [consts.BACK]
@@ -106,13 +113,13 @@ def exam_callback(update: Update, context: CallbackContext) -> None:
         chat_id=update.callback_query.message.chat_id,
         message_id=update.callback_query.message.message_id,
         parse_mode=ParseMode.HTML,
-        reply_markup=keyboards.test_start_confirmation(exam)
-    )
+        reply_markup=keyboards.test_start_confirmation(exam, user_id))
     
+
     return consts.PASS_TEST
 
 
-def     exam_confirmation(update: Update, context: CallbackContext) -> None:
+def exam_confirmation(update: Update, context: CallbackContext) -> None:
     user, _ = User.get_user_and_created(update, context)
 
     query = update.callback_query
@@ -122,8 +129,13 @@ def     exam_confirmation(update: Update, context: CallbackContext) -> None:
 
     query.answer()
     if action_type == "start":
+
+        if len(data) == 5:
+            again = data[4]
+        else:
+            again = None
         exam = Exam.objects.get(id=exam_id)
-        user_exam, counter = exam.create_user_exam(user)
+        user_exam, counter = exam.create_user_exam(user, again)
 
         context.user_data["number_of_test"] = 1
         context.user_data["questions_count"] = counter
@@ -141,12 +153,13 @@ def     exam_confirmation(update: Update, context: CallbackContext) -> None:
 
         elif counter == 0:
             query.delete_message()
-            query.message.reply_text(
-                "Ushbu testdagi hamma savollarga to'g'ri javob bergansiz ", reply_markup=ReplyKeyboardRemove())
+            user_message = context.bot.send_message(chat_id=user.user_id, text="Ushbu testdagi hamma savollarga to'g'ri javob bergansiz. Qaytadan ishlashni xohlasangiz \"Qayta ishlash\" tugmasini bosing.", reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Qayta ishlash", callback_data=f"test-confirmation-{exam.id}-start-again")], [InlineKeyboardButton("Testlarga qaytish", callback_data=f"stage-exams-{user.user_id}-{exam.stage}")],[InlineKeyboardButton("Bosh Sahifa", callback_data = f"home-page-{user.user_id}")],[InlineKeyboardButton("Bosqich tanlashga qaytish", callback_data=f"back-to-exam-stages-{user.user_id}")]]))
+            context.user_data["message_id"] = user_message.message_id
 
     elif action_type == "back":
         exam_start(update, context)
-        
+
     return consts.PASS_TEST
 
 
@@ -154,8 +167,8 @@ def exam_handler(update: Update, context: CallbackContext):
     data = update.callback_query.data.split("-")
     question_id = data[2]
     question_option_id = data[3]
-    user_exam_id = data[4]   
-    
+    user_exam_id = data[4]
+
     user, _ = User.get_user_and_created(update, context)
     question_option = QuestionOption.objects.get(id=question_option_id)
     user_exam_answer = UserExamAnswer.objects.get(
@@ -165,34 +178,25 @@ def exam_handler(update: Update, context: CallbackContext):
     user_exam_answer.is_correct = question_option.is_correct
     user_exam_answer.answered = True
     user_exam_answer.save()
-    
-    
 
     question = user_exam.last_unanswered_question()
     if question:
         helpers.send_test(update=update, context=context,
                           question=question, user_exam=user_exam)
-        
+
     else:
         score = user_exam.update_score()
-        
+        user_exam.is_finished = True
+        user_exam.save()
         update.callback_query.delete_message()
         context.bot.send_message(
             user.user_id, f"Imtihon tugadi.\n\nTo'g'ri javoblar soni: {score} ta", reply_markup=make_keyboard_for_start_command())
-        
-    
+
     return consts.PASS_TEST
-        
-            
-
-
-    # user_exam_answer.question_option =
-
-    pass
 
 
 def poll_handler(update: Update, context: CallbackContext) -> None:
-    print("\n\n\poll handlerga kirdi \n\n")
+    # print("\n\n\poll handlerga kirdi \n\n")
     # GETTING USER
     user_id = helpers.get_chat_id(update, context)
     user = User.objects.get(user_id=user_id)

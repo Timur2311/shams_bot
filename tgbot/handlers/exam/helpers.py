@@ -12,7 +12,7 @@ def send_test(update, context, question, user_exam):
     buttons = []
     
     for index, question_option in enumerate(question.options.order_by("?")):
-            text += f"{variants[index]}) {question_option.content}"
+            text += f"\n<b>{variants[index]}</b>) {question_option.content}"
             buttons.append([InlineKeyboardButton(f"{variants[index]}", callback_data=f"question-variant-{question.id}-{question_option.id}-{user_exam.id}")])
             
     if number_of_test==1:

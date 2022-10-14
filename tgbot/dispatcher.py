@@ -94,6 +94,10 @@ def setup_dispatcher(dp):
                     "[-bosqich]+$"), exam_handler.stage_exams),
                 CallbackQueryHandler(
                     exam_handler.back_to_exam_stage, pattern=r"back-to-exam-stages-"),
+                CallbackQueryHandler(
+                    exam_handler.stage_exams, pattern=r"stage-exams-"),
+                CallbackQueryHandler(
+                    onboarding_handlers.home_page, pattern=r"home-page"),
                 MessageHandler(Filters.text(consts.BACK),
                                onboarding_handlers.back_to_home_page),
 
@@ -104,7 +108,7 @@ def setup_dispatcher(dp):
                 CallbackQueryHandler(
                 onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
                 MessageHandler(Filters.text(consts.BACK),
-                       onboarding_handlers.back_to_home_page),
+                               onboarding_handlers.back_to_home_page),
             ],
             consts.LEADERBOARD: [],
             consts.CONTACTING: [],
