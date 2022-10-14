@@ -131,6 +131,7 @@ class UserExam(models.Model):
     def update_score(self):
         UserExam.objects.filter(id=self.id).update(
             score=UserExamAnswer.objects.filter(is_correct=True, user_exam=self).count())
+        return self.score
 
     def create_answers(self):
         exam_answers = []
@@ -155,3 +156,5 @@ class UserExamAnswer(models.Model):
     option_ids = models.CharField(max_length=255, null=True)
     answered = models.BooleanField(default=False)
     is_correct = models.BooleanField(default=False)
+    
+    

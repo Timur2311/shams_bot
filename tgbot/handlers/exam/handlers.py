@@ -9,7 +9,7 @@ from tgbot import consts
 
 from tgbot.handlers.exam import static_text
 from tgbot.models import User
-from exam.models import Exam, UserExam
+from exam.models import Exam, QuestionOption, UserExam, UserExamAnswer
 from exam.models import Question
 from tgbot.handlers.exam import keyboards
 from tgbot.handlers.exam import helpers
@@ -51,7 +51,7 @@ def stage_exams(update: Update, context: CallbackContext) -> None:
         consts.CHANNEL_USERNAME, update.message.from_user.id)
     if chat_member['status'] == "left":
         u = User.objects.get(user_id=update.message.from_user.id)
-        check_subscription(update,context, u)
+        check_subscription(update, context, u)
     else:
         stage = update.message.text[0]
 
@@ -60,7 +60,8 @@ def stage_exams(update: Update, context: CallbackContext) -> None:
         for exam in exams:
             buttons.append([InlineKeyboardButton(
                 f"{exam.tour}-tur savollari", callback_data=f"passing-test-{exam.id}-{update.message.from_user.id}")])
-        buttons.append([InlineKeyboardButton(consts.BACK, callback_data=f"back-to-exam-stages-{update.message.from_user.id}")])
+        buttons.append([InlineKeyboardButton(
+            consts.BACK, callback_data=f"back-to-exam-stages-{update.message.from_user.id}")])
         exam_message = update.message.reply_text(
             "Quyidagi imtihonlardan birini tanlang⬇️", reply_markup=InlineKeyboardMarkup(buttons))
         context.user_data["exam_stage_message_id"] = exam_message.message_id
@@ -69,16 +70,18 @@ def stage_exams(update: Update, context: CallbackContext) -> None:
 
 
 def back_to_exam_stage(update: Update, context: CallbackContext):
-    
+
     data = update.callback_query.data.split("-")
     user_id = data[4]
-    
-    context.bot.delete_message(chat_id = update.callback_query.message.chat_id, message_id =context.user_data["exam_stage_message_id"])
-    context.bot.send_message(chat_id = user_id, text = "Quyidagilardan birini tanlang⬇️",reply_markup=ReplyKeyboardMarkup([
+
+    context.bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                               message_id=context.user_data["exam_stage_message_id"])
+    context.bot.send_message(chat_id=user_id, text="Quyidagilardan birini tanlang⬇️", reply_markup=ReplyKeyboardMarkup([
         [consts.FIRST], [consts.SECOND], [consts.THIRD], [
             consts.FOURTH], [consts.FIFTH], [consts.BACK]
     ], resize_keyboard=True))
     pass
+
 
 def leader(update: Update, context: CallbackContext) -> None:
     user_exams = UserExam.objects.all().order_by("-score")
@@ -105,9 +108,11 @@ def exam_callback(update: Update, context: CallbackContext) -> None:
         parse_mode=ParseMode.HTML,
         reply_markup=keyboards.test_start_confirmation(exam)
     )
+    
+    return consts.PASS_TEST
 
 
-def exam_confirmation(update: Update, context: CallbackContext) -> None:
+def     exam_confirmation(update: Update, context: CallbackContext) -> None:
     user, _ = User.get_user_and_created(update, context)
 
     query = update.callback_query
@@ -119,6 +124,10 @@ def exam_confirmation(update: Update, context: CallbackContext) -> None:
     if action_type == "start":
         exam = Exam.objects.get(id=exam_id)
         user_exam, counter = exam.create_user_exam(user)
+
+        context.user_data["number_of_test"] = 1
+        context.user_data["questions_count"] = counter
+
         # context.bot_data[update.callback_query.from_user.id] = update.callback_query.from_user
         if counter > 0:
             user_exam.create_answers()
@@ -126,7 +135,10 @@ def exam_confirmation(update: Update, context: CallbackContext) -> None:
             query.delete_message()
             query.message.reply_text(
                 f"Test boshlandi!\n\n Testlar soni: {counter} ta", reply_markup=ReplyKeyboardRemove())
-            helpers.send_exam_poll(context, question, user.user_id)
+
+            helpers.send_test(update=update, context=context,
+                              question=question, user_exam=user_exam)
+
         elif counter == 0:
             query.delete_message()
             query.message.reply_text(
@@ -134,6 +146,49 @@ def exam_confirmation(update: Update, context: CallbackContext) -> None:
 
     elif action_type == "back":
         exam_start(update, context)
+        
+    return consts.PASS_TEST
+
+
+def exam_handler(update: Update, context: CallbackContext):
+    data = update.callback_query.data.split("-")
+    question_id = data[2]
+    question_option_id = data[3]
+    user_exam_id = data[4]   
+    
+    user, _ = User.get_user_and_created(update, context)
+    question_option = QuestionOption.objects.get(id=question_option_id)
+    user_exam_answer = UserExamAnswer.objects.get(
+        user_exam__id=user_exam_id, question__id=question_id)
+    user_exam = UserExam.objects.get(id=user_exam_id)
+
+    user_exam_answer.is_correct = question_option.is_correct
+    user_exam_answer.answered = True
+    user_exam_answer.save()
+    
+    
+
+    question = user_exam.last_unanswered_question()
+    if question:
+        helpers.send_test(update=update, context=context,
+                          question=question, user_exam=user_exam)
+        
+    else:
+        score = user_exam.update_score()
+        
+        update.callback_query.delete_message()
+        context.bot.send_message(
+            user.user_id, f"Imtihon tugadi.\n\nTo'g'ri javoblar soni: {score} ta", reply_markup=make_keyboard_for_start_command())
+        
+    
+    return consts.PASS_TEST
+        
+            
+
+
+    # user_exam_answer.question_option =
+
+    pass
 
 
 def poll_handler(update: Update, context: CallbackContext) -> None:

@@ -87,6 +87,8 @@ def setup_dispatcher(dp):
                 CallbackQueryHandler(
                     exam_handler.exam_confirmation, pattern=r"test-confirmation-"),
                 CallbackQueryHandler(
+                    exam_handler.exam_handler, pattern=r"question-variant-"),
+                CallbackQueryHandler(
                     onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
                 MessageHandler(Filters.regex(
                     "[-bosqich]+$"), exam_handler.stage_exams),
