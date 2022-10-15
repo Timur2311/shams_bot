@@ -60,11 +60,11 @@ class UserChallenge(models.Model):
 
     user_started_at = models.DateTimeField(null=True)
     user_finished_at = models.DateTimeField(null=True)
-    user_duration = models.CharField(max_length = 256, null=True)
+    # user_duration = models.CharField(max_length = 256, null=True) 
     
     opponent_started_at = models.DateTimeField(null=True)
     opponent_finished_at = models.DateTimeField(null=True)
-    opponent_duration = models.CharField(max_length = 256, null=True)
+    # opponent_duration = models.CharField(max_length = 256, null=True)
     
 
     is_user_finished = models.BooleanField(default=False)
