@@ -22,9 +22,18 @@ def send_test(update, context, question, user_exam):
         update.callback_query.edit_message_text(text = text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.HTML)
         context.user_data["number_of_test"]+=1
     
-    
+def get_duration(duration):
+    text = ""
+    if duration//60==0:
+            minutes = 0
+            seconds = duration
+            text = f"{seconds} sekund"
+    elif duration//60>0:
+            minutes = duration//60
+            seconds = duration%60
+            text = f"{minutes} daqiqayu {seconds} sekund"
 
-
+    return text
 
 def send_exam_poll(context, question, chat_id):
     # POLL OPTIONS

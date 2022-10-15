@@ -6,7 +6,7 @@ from group_challenge.models import Challenge
 
 def saving_data():
     workbook = pd.read_excel('media/questions/test.xlsx')
-    print(workbook.head())
+    # print(workbook.head())
     questions_count = len(workbook['name'])
     if len(workbook['question'])>0:
         for i in range(questions_count):

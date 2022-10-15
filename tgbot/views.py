@@ -19,7 +19,7 @@ def index(request):
 
 def add_question(request):
     if request.method == "POST":
-        print(f"{request.FILES}")
+        # print(f"{request.FILES}")
         form = QuestionForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()

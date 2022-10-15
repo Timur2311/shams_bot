@@ -1,102 +1,90 @@
 
 from uuid import uuid4
-from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle,InputTextMessageContent, ParseMode
+from datetime import datetime
+from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, ParseMode
 from telegram.ext import CallbackContext, ConversationHandler
-from group_challenge.models import Challenge, UserChallenge
+from group_challenge.models import Challenge, UserChallenge, UserChallengeAnswer
 
 from tgbot.handlers.exam import static_text
 from tgbot.models import User
-from exam.models import Exam, UserExam
-from exam.models import Question
+from exam.models import Exam, UserExam, QuestionOption
+from exam.models import  QuestionOption
 from tgbot.handlers.exam import keyboards
 from tgbot.handlers.exam import helpers
-from tgbot.handlers import onboarding
 from tgbot.handlers.onboarding.keyboards import make_keyboard_for_start_command
 from tgbot import consts
 from utils.check_subscription import check_subscription
 
 
 def inlinequery(update: Update, context: CallbackContext) -> None:
+    
     query = update.inline_query.query
 
     if query == "":
         return
-    elif query =="1":
+    elif query == "1":
         text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
-    elif query =="2":
+    elif query == "2":
         text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
-    elif query =="3":
-        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"   
-    elif query =="4":
-        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"  
-    elif query =="5":
+    elif query == "3":
         text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
-        
+    elif query == "4":
+        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
+    elif query == "5":
+        text = f"Sizni {query}-bosqich savollari bo'yicha bellashuvga taklif qilamiz!"
+    else:
+        return
+
     results = []
 
-
-    # user_id = update.inline_query.from_user.id
+    user, _ = User.get_user_and_created(update, context)
     
-    user, created = User.get_user_and_created(update, context)
+    user_challenge = UserChallenge.objects.filter(user=user, challenge__stage=query, opponent = None,is_active=True).last()
     
-    user_challenge = UserChallenge.objects.filter(user=user).filter(challenge__stage = query).filter(is_active=True).first()
-    
-    
-
-    if created:
-        warning_text = "Siz ushbu botda yo'q ekansiz, botda sizning ismingiz \"IsmiGul\" bo'lib saqlandi. Ismingizni o'zgartirish uchun https://t.me/clc_challenge_bot botga o'tib /start deb yozing"
-    else:
-        warning_text = ""
-        
-        
- 
     results.append(
         InlineQueryResultArticle(
             id=str(uuid4()),
             title=f"{user_challenge.challenge.stage}",
             input_message_content=InputTextMessageContent(
-                message_text=warning_text+text),
+                message_text=text),
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.ACCEPT, callback_data=f"challenge-received-{consts.ACCEPT}-{user_challenge.user.user_id}-{user_challenge.id}")],
                                                [InlineKeyboardButton(
                                                    text=consts.DECLINE, callback_data=f"challenge-received-{consts.DECLINE}-{user_challenge.user.user_id}-{user_challenge.id}")]
                                                ])
-
         )
     )
 
     update.inline_query.answer(results)
 
-    return consts.SELECTING_ACTION
-
-
 
 def challenges_list(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
-        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],[consts.BACK]
-        ], resize_keyboard=True))
-    
-     
+        [consts.FIRST], [consts.SECOND], [consts.THIRD], [
+            consts.FOURTH], [consts.FIFTH], [consts.BACK]
+    ], resize_keyboard=True))
+
     return consts.SHARING_CHALLENGE
 
+
 def stage_exams(update: Update, context: CallbackContext):
+    u = User.objects.get(user_id=update.message.from_user.id)
+    
     chat_member = context.bot.get_chat_member(
         consts.CHANNEL_USERNAME, update.message.from_user.id)
     if chat_member['status'] == "left":
-        u = User.objects.get(user_id=update.message.from_user.id)
-        check_subscription(update,context, u)
+        check_subscription(update, context, u)
     else:
         stage = update.message.text[0]
         challenge = Challenge.objects.get(stage=stage)
-        user_id=update.message.from_user.id
-        
-        user_challenge = challenge.create_user_challenge(user_id, challenge)
+    
+        user_challenge = challenge.create_user_challenge(u.user_id, challenge)
 
-        
         challenge_stage = update.message.reply_text(f"Siz {stage}-bosqich testlari bilan do'stingiz bilan bellashmoqchisiz.\n\n{consts.SHARE} tugmasini bosib Challenge ni  do'stlaringiz bilan ulashing yoki <b>\"{consts.RANDOM_OPPONENT}\"</b> tugmasini bosing!",
-                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.SHARE, switch_inline_query=f"{stage}")],[InlineKeyboardButton(text=consts.RANDOM_OPPONENT, callback_data=f"{consts.RANDOM_OPPONENT}-{user_challenge.id}")],[InlineKeyboardButton(consts.REVOKE, callback_data=f"revoke-challenge-{user_challenge.id}-{user_id}")]]), parse_mode=ParseMode.HTML)
-        context.user_data['challenge_stage_message_id'] = challenge_stage.message_id
-        
+                                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=consts.SHARE, switch_inline_query=f"{stage}")], [InlineKeyboardButton(text=consts.RANDOM_OPPONENT, callback_data=f"{consts.RANDOM_OPPONENT}-{user_challenge.id}")], [InlineKeyboardButton(consts.REVOKE, callback_data=f"revoke-challenge-{u.user_id}")]]), parse_mode=ParseMode.HTML)
+        context.user_data['message_id'] = challenge_stage.message_id
+
     return consts.SHARING_CHALLENGE
+
 
 def challenge_callback(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -104,164 +92,250 @@ def challenge_callback(update: Update, context: CallbackContext):
     received_type = data[2]
     challenge_owner_id = data[3]
     challenge_id = data[4]
-    user_challenge = UserChallenge.objects.get(id=challenge_id)
+    print(f"id==={type(challenge_id)}")
+    user_challenge = UserChallenge.objects.get(id=int(challenge_id))
 
     user, _ = User.get_user_and_created(update, context)
 
-    query_user_id = str(query.from_user.id)
+    # user.user_id = str(query.from_user.id)
 
     if user.name == "IsmiGul":
         context.user_data[consts.FROM_CHAT] = True
-        if query_user_id != challenge_owner_id:
-            query.edit_message_text(f"Siz https://t.me/clc_challenge_bot botimizda \"IsmiGul\" bo'lib qolib ketibsiz, iltimos botga o'tib ro'yxatdan o'ting. Ro'xatdan o'tib bo'lgach \"Tekshirish\" tugmasini bosing", reply_markup=InlineKeyboardMarkup(
+        if user.user_id != challenge_owner_id:
+            query.edit_message_text(f"Siz https://t.me/shamsquizbot botimizda \"IsmiGul\" bo'lib qolib ketibsiz, iltimos botga o'tib ro'yxatdan o'ting. Ro'xatdan o'tib bo'lgach \"Tekshirish\" tugmasini bosing", reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Tekshirish", callback_data=f"check-{user_challenge.id}-{challenge_owner_id}-{user.user_id}-{received_type}")]]))
 
     elif received_type == consts.ACCEPT:
-        print(
-            f"\n\nquery--->{type(query.from_user.id)}\nowner--->{type(challenge_owner_id)}")
-        if query_user_id != challenge_owner_id:
+        if user.user_id != challenge_owner_id:
             user_challenge.users.add(user)
-            query.edit_message_text(text=f"<a href='tg://user?id={query.from_user.id}'>{user.name}</a> qabul qilindi, challenge haqida to'liqroq ma'lumot uchun\"{user_challenge.challenge.title}\" ni ustiga bosing.",  reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton(f"{user_challenge.challenge.title}", callback_data=f"detail-page-{user_challenge.id}")]]), parse_mode=ParseMode.HTML)
-    elif received_type == consts.DECLINE:
-        if query_user_id != challenge_owner_id:
+            user_challenge.opponent = user
+            user_challenge.save()
             query.edit_message_text(
-                f" <a href='tg://user?id={query.from_user.id}'>{user.name}</a> challenge ga qatnashishni qabul qilmadi.")
+                text=f"<a href='tg://user?id={query.from_user.id}'>{user.name}</a> bellashuvni qabul qildi.", parse_mode=ParseMode.HTML)
+            context.bot.send_message(chat_id=challenge_owner_id, text=f"<a href='tg://user?id={user.user_id}'>{user.name}</a> bellashuvga rozi bo'ldi.Bellashuvni boshlash uchun \"Boshlash\" tugmasini bosing ", reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Boshlash", callback_data=f"challenge-confirmation-{user_challenge.id}-start-user")]]),parse_mode = ParseMode.HTML)
+            context.bot.send_message(chat_id=user.user_id, text="Siz bellashuvga rozi bo'ldingiz. Bellashuvni boshlash uchun \"Boshlash\" tugmasini bosing ",
+                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Boshlash", callback_data=f"challenge-confirmation-{user_challenge.id}-start-opponent")]]), parse_mode = ParseMode.HTML)
+    elif received_type == consts.DECLINE:
+        if user.user_id != challenge_owner_id:
+            query.edit_message_text(
+                f" <a href='tg://user?id={query.from_user.id}'>{user.name}</a> challenge ga qatnashishni rad etdi.", parse_mode = ParseMode.HTML)
+    
+
+def user_check(update: Update, context: CallbackContext):
+    query = update.callback_query
+    data = update.callback_query.data.split("-")
+    user_challenge_id = data[1]
+    user_challenge = UserChallenge.objects.get(id=user_challenge_id)
+    challenge_owner_id = data[2]
+    user_id = data[3]
+    received_type = data[4]
+    user, _ = User.get_user_and_created(update, context)
+
+    user.user_id = str(query.from_user.id)
+
+    if user.name == "IsmiGul":
+        if user.user_id != challenge_owner_id:
+            query.edit_message_text(f"Siz <a href='https://t.me/clc_challenge_bot'>ShamsBot</a> botimizda hali ham \"IsmiGul\" bo'lib qolib ketibsiz, iltimos botga o'tib ro'yxatdan o'ting. Ro'xatdan o'tib bo'lgach \"Tekshirish\" tugmasini bosing", reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Tekshirish", callback_data=f"check-{user_challenge_id}-{challenge_owner_id}-{user_id}-{received_type}")]]), parse_mode=ParseMode.HTML)
+
+    elif received_type == consts.ACCEPT:
+        if user.user_id != challenge_owner_id:
+            user_challenge.users.add(user)
+            user_challenge.opponent = user
+            user_challenge.save()
+            query.edit_message_text(
+                f"<a href='tg://user?id={query.from_user.id}'>{user.name}</a> bellashuvga rozilik bildirdi.", parse_mode=ParseMode.HTML)
+            context.bot.send_message(chat_id=challenge_owner_id, text=f"<a href='tg://user?id={user.user_id}'>{user.name}</a> bellashuvga rozi bo'ldi.Bellashuvni boshlash uchun \"Boshlash\" tugmasini bosing ", reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Boshlash", callback_data=f"challenge-confirmation-{user_challenge.id}-start-user")]]), parse_mode=ParseMode.HTML)
+            context.bot.send_message(chat_id=user.user_id, text="Siz bellashuvga rozi bo'ldingiz. Bellashuvni boshlash uchun \"Boshlash\" tugmasini bosing ",
+                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Boshlash", callback_data=f"challenge-confirmation-{user_challenge.id}-start-opponent")]]))
+    elif received_type == consts.DECLINE:
+        if user.user_id != challenge_owner_id:
+            query.edit_message_text(
+                f"<a href='tg://user?id={query.from_user.id}'>{user.name}</a> bellashuvga rozilik bildirmadi.", parse_mode=ParseMode.HTML)
+
+
+def challenge_confirmation(update: Update, context: CallbackContext) -> None:
+    user, _ = User.get_user_and_created(update, context)
+
+    query = update.callback_query
+    data = update.callback_query.data.split("-")
+    user_challenge_id = data[2]
+    user_type = data[4]
+
+    query.answer()
+
+    if user_type == "user":
+        user_challenge = UserChallenge.objects.get(id=int(user_challenge_id))
+        now = datetime.now()
+        user_challenge.user_started_at = now
+        user_challenge.save()
+
+        context.user_data["number_of_test"] = 1 
+
+        # context.bot_data[update.callback_query.from_user.id] = update.callback_query.from_user
+
+        user_challenge.create_user_answers()
+        question = user_challenge.last_unanswered_question(user_challenge.user)
+        query.delete_message()
+        del_message = query.message.reply_text(
+            f"Test boshlandi!\n\n Testlar soni: 10 ta", reply_markup=ReplyKeyboardRemove())
+        context.user_data["message_id"] = del_message.message_id
+        context.user_data["chat_id"] = update.callback_query.message.chat_id
+        helpers.send_test(update=update, context=context,
+                          question=question, user_exam=user_challenge)
+
+    elif user_type == "opponent":
+        user_challenge = UserChallenge.objects.get(id=int(user_challenge_id))
+        now = datetime.now()
+        user_challenge.opponent_started_at = now
+        user_challenge.save()
+        context.user_data["number_of_test"] = 1 
+
+        # context.bot_data[update.callback_query.from_user.id] = update.callback_query.from_user
+
+        user_challenge.create_opponent_answers()
+        question = user_challenge.last_unanswered_question(user_challenge.opponent)
+        query.delete_message()
+        del_message = query.message.reply_text(
+            f"Test boshlandi!\n\n Testlar soni: 10 ta", reply_markup=ReplyKeyboardRemove())
+        context.user_data["message_id"] = del_message.message_id
+        context.user_data["chat_id"] = update.callback_query.message.chat_id
+        helpers.send_test(update=update, context=context,
+                          question=question, user_exam=user_challenge)
+
+    return consts.SHARING_CHALLENGE
+
+
+def challenge_handler(update: Update, context: CallbackContext):
+    data = update.callback_query.data.split("-")
+    question_id = data[2]
+    question_option_id = data[3]
+    user_challenge_id = data[4]
+
+    text = ""
+    
+    user, _ = User.get_user_and_created(update, context)
+    question_option = QuestionOption.objects.get(id=question_option_id)
+    user_challenge_answer = UserChallengeAnswer.objects.get(
+        user_challenge__id=user_challenge_id, question__id=question_id,user = user )
+    user_challenge = UserChallenge.objects.get(id=user_challenge_id)
+
+    user_challenge_answer.is_correct = question_option.is_correct
+    user_challenge_answer.answered = True
+    user_challenge_answer.save()
+
+    question = user_challenge.last_unanswered_question(user)
+    if question:
+        helpers.send_test(update=update, context=context,
+                          question=question, user_exam=user_challenge)
+
+    else:
+        now = datetime.now()
+        if user.user_id == user_challenge.user.user_id: #user ekan
+            score = user_challenge.update_score("user")
+            user_challenge.user_finished_at = now
+            user_challenge.is_user_finished = True
+            user_challenge.save()
+            if user_challenge.is_opponent_finished:
+                user_challenge.is_active = False
+                user_challenge.save()
+                user_duration = user_challenge.user_duration()
+                opponent_duration = user_challenge.opponent_duration()
+                user_time = helpers.get_duration(user_duration)
+                opponent_time = helpers.get_duration(opponent_duration)
+                if user_challenge.user_score > user_challenge.opponent_score:
+                    text+=f"\nSiz g'alaba qozondingiz\n\nKetkazgan vaqtingiz: {user_time}\nRaqibingiz ketkazgan vaqt: {opponent_time}" 
+                elif user_challenge.user_score < user_challenge.opponent_score:
+                    text+=f"\nAfsuski siz \n\nKetkazgan vaqtingiz: {user_time}\nRaqibingiz ketkazgan vaqt: {opponent_time}"
+                elif user_challenge.user_score == user_challenge.opponent_score:
+                    if user_duration < opponent_duration:
+                        text+=f"\nSiz g'alaba qozondingiz\n\nKetkazgan vaqtingiz: {user_time}\nRaqibingiz ketkazgan vaqt: {opponent_time}"
+                    elif user_duration > opponent_duration:
+                        text+=f"\nAfsuski siz yutqazdingiz\n\nKetkazgan vaqtingiz: {user_time}\nRaqibingiz ketkazgan vaqt: {opponent_time}"
+            else:
+                text += "\nHali raqibingiz tugatmadi"
+                
+                    
+        elif user.user_id == user_challenge.opponent.user_id: #opponent ekan
+            score = user_challenge.update_score("opponent")
+            user_challenge.opponent_finished_at = now
+            user_challenge.is_opponent_finished = True
+            user_challenge.save()
+            if user_challenge.is_user_finished:
+                user_challenge.is_active = False
+                user_challenge.save()
+                user_duration = user_challenge.user_duration()
+                opponent_duration = user_challenge.opponent_duration()
+                user_time = helpers.get_duration(user_duration)
+                opponent_time = helpers.get_duration(opponent_duration)
+                if user_challenge.user_score < user_challenge.opponent_score:
+                    text+=f"\nSiz g'alaba qozondingiz\n\n Ketkazgan vaqtingiz: {opponent_time}\nRaqibingiz ketkazgan vaqt: {user_time}" 
+                elif user_challenge.user_score > user_challenge.opponent_score:
+                    text+=f"\nAfsuski siz yutqazdingiz\n\nKetkazgan vaqtingiz: {opponent_time}\nRaqibingiz ketkazgan vaqt: {user_time}"
+                elif user_challenge.user_score == user_challenge.opponent_score:
+                    if user_duration > opponent_duration :
+                        text+=f"\nSiz g'alaba qozondingiz\n\nKetkazgan vaqtingiz: {opponent_time}\nRaqibingiz ketkazgan vaqt: {user_time}"
+                    elif user_duration < opponent_duration:
+                        text+=f"\nAfsuski siz yutqazdingiz\n\nKetkazgan vaqtingiz: {opponent_time}\nRaqibingiz ketkazgan vaqt: {user_time}"
+            else:
+                text += "\nHali raqibingiz tugatmadi"
+            
+        
+        
+       
+        update.callback_query.delete_message()
+        context.bot.delete_message(chat_id = context.user_data['chat_id'], message_id = context.user_data["message_id"])
+        context.bot.send_message(
+            user.user_id, text = f"Imtihon tugadi.\n\nTo'g'ri javoblar soni: {score} ta" + text, reply_markup=make_keyboard_for_start_command())
+
+    return consts.SHARING_CHALLENGE
 
 def back_to_challenge_stage(update: Update, context: CallbackContext):
     data = update.callback_query.data.split("-")
     user_challenge_id = data[2]
     user_id = data[3]
-    message_id = context.user_data["challenge_stage_message_id"]
-    
-    user_challenge = UserChallenge.objects.get(id = user_challenge_id)
+    message_id = context.user_data["message_id"]
+
+    user_challenge = UserChallenge.objects.get(id=user_challenge_id)
     user_challenge.delete()
-    
-    context.bot.delete_message(chat_id = update.callback_query.message.chat_id, message_id =context.user_data["challenge_stage_message_id"])
-    
-    
-    context.bot.send_message(chat_id = user_id, text = "Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
-        [consts.FIRST],[consts.SECOND],[consts.THIRD],[consts.FOURTH],[consts.FIFTH],[consts.BACK]
-        ], resize_keyboard=True))
-    
+
+    context.bot.delete_message(
+        chat_id=update.callback_query.message.chat_id, message_id=message_id)
+
+    context.bot.send_message(chat_id=user_id, text="Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
+        [consts.FIRST], [consts.SECOND], [consts.THIRD], [
+            consts.FOURTH], [consts.FIFTH], [consts.BACK]
+    ], resize_keyboard=True))
+
     return consts.SHARING_CHALLENGE
-    
-    
-    
-    
 
 
+# def exam_start(update: Update, context: CallbackContext) -> None:
+#     """
+#     TODO:
+#     - Pagination
+#     """
+#     exams = Exam.objects.all()
+#     inline_keyboard = keyboards.exam_keyboard(exams)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def exam_start(update: Update, context: CallbackContext) -> None:
-    """
-    TODO:
-    - Pagination
-    """
-    exams = Exam.objects.all()
-    inline_keyboard = keyboards.exam_keyboard(exams)
-
-    if update.callback_query:
-        update.callback_query.message.edit_text(
-            text=static_text.exam_start, reply_markup=inline_keyboard,
-            parse_mode=ParseMode.HTML
-        )
-    else:
-        update.message.reply_text(
-            text=static_text.exam_start, reply_markup=inline_keyboard)
+#     if update.callback_query:
+#         update.callback_query.message.edit_text(
+#             text=static_text.exam_start, reply_markup=inline_keyboard,
+#             parse_mode=ParseMode.HTML
+#         )
+#     else:
+#         update.message.reply_text(
+#             text=static_text.exam_start, reply_markup=inline_keyboard)
 
 
 def leader(update: Update, context: CallbackContext) -> None:
     user_exams = UserExam.objects.all().order_by("-score")
     text = ""
-    for index,user_exam in enumerate (user_exams):
-        text +=f"{index+1}. {user_exam.user} -  {user_exam.exam.title} - {user_exam.score} \n"
+    for index, user_exam in enumerate(user_exams):
+        text += f"{index+1}. {user_exam.user} -  {user_exam.exam.title} - {user_exam.score} \n"
     update.message.reply_text(
-            text=text)
+        text=text)
 
 
-def exam_callback(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    data = update.callback_query.data.split("-")
-    exam_id = data[2]
-    
-
-    query.answer()
-    exam = Exam.objects.get(id=exam_id)
-    text = f"{exam.title}\n\n<i>{exam.content}</i>\n\n<b>Imtixonni boshlaymizmi?</b>"
-    context.bot.edit_message_text(
-        text=text,
-        chat_id=update.callback_query.message.chat_id,
-        message_id=update.callback_query.message.message_id,
-        parse_mode=ParseMode.HTML,
-        reply_markup=keyboards.exam_start_confirmation(exam)
-    )
-
-
-def exam_confirmation(update: Update, context: CallbackContext) -> None:
-    user = User.objects.get(user_id = update.callback_query.from_user.id)
-
-    query = update.callback_query
-    data = update.callback_query.data.split("-")
-    exam_id = data[2]
-    action_type = data[3]
-
-    query.answer()
-    if action_type == "start":
-        exam = Exam.objects.get(id=exam_id)
-        user_exam = exam.create_user_exam(user)
-        user_exam.create_answers()
-        question = user_exam.last_unanswered_question()
-
-        query.delete_message()
-        query.message.reply_text(
-            static_text.exam_start_after_click, reply_markup=ReplyKeyboardRemove())
-
-        helpers.send_exam_poll(context, question, user.user_id)
-
-    elif action_type == "back":
-        exam_start(update, context)
-
-
-def poll_handler(update: Update, context: CallbackContext) -> None:
-    # GETTING USER
-    user_id = helpers.get_chat_id(update, context)
-    user = User.objects.get(user_id=user_id)
-
-    # CHECKING ANSWER
-    is_correct = False
-    for index, option in enumerate(update.poll.options):
-        if option.voter_count >= 1:
-            if index == update.poll.correct_option_id:
-                is_correct = True
-            break
-
-    # SAVE ANSWER
-    user_exam = UserExam.objects.filter(user=user, is_finished=False).last()
-    answer_question = user_exam.last_unanswered()
-    answer_question.is_correct = is_correct
-    answer_question.answered = True
-    answer_question.save()
-
-    user_exam.update_score()
-    user_exam = UserExam.objects.filter(user=user, is_finished=False).last()
-
-    question = user_exam.last_unanswered_question()
-    if question:
-        helpers.send_exam_poll(context, question, user.user_id)
-    else:
-        context.bot.send_message(
-            user_id, f"Imtixon tugadi.\n\nSizning natijangiz: {user_exam.score}", reply_markup=make_keyboard_for_start_command())

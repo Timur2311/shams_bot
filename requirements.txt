@@ -28,5 +28,9 @@ django-celery-beat
 # Telegram
 python-telegram-bot==13.13
 
+#upload_excel
+pandas  
+openpyxl
+
 # monitoring
 # sentry-sdk
