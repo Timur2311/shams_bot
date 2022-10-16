@@ -101,19 +101,18 @@ class UserChallenge(models.Model):
         
 
     def update_score(self, type):
-        user_challenge = UserChallenge.objects.get(id=self.id)
-
         if type == 'user':
-
-            score = UserChallengeAnswer.objects.filter(
-                is_correct=True, user_challenge=self, user=self.user).count()
-            user_challenge.user_score = int(score)
-            user_challenge.save()
+            
+            score = UserChallengeAnswer.objects.filter(user_challenge=self).filter(user=self.user).filter(is_correct=True).count()
+            self.user_score = int(score)
+            
         elif type == "opponent":
-            score = UserChallengeAnswer.objects.filter(
-                is_correct=True, user_challenge=self, user=self.opponent).count()
-            user_challenge.opponent_score = int(score)
-            user_challenge.save()
+            score = UserChallengeAnswer.objects.filter(user_challenge=self).filter(user=self.opponent).filter(is_correct=True).count()
+
+            self.opponent_score = int(score)
+            
+            
+        print(f"update score ni ichiga kirdi\nuser----{self.user_score}\nopponent---{self.opponent_score}")
 
         # print(f"score-----{score}")
 
