@@ -77,10 +77,16 @@ def checking_subscription(update: Update, context: CallbackContext):
 
 
 def home_page(update: Update, context: CallbackContext):
-    message_id = context.user_data["message_id"]
     data = update.callback_query.data.split("-")
     user_id = data[2]
+    
+    if context.bot_data[f"{user_id}"]:
+        message_id = context.bot_data[f"{user_id}"]["ended_challenge"][0]
+    else:
+        message_id = context.user_data["message_id"]
 
+    
+    
     context.bot.delete_message(
         message_id=message_id, chat_id=update.callback_query.message.chat_id)
     context.bot.send_message(chat_id=user_id, text="Quyidagilardan birini tanlang⬇️",

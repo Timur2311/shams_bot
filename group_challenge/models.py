@@ -53,6 +53,8 @@ class UserChallenge(models.Model):
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     users = models.ManyToManyField(User, related_name="user_challenges")
     is_active = models.BooleanField(default=True)
+    is_random_opponent =  models.BooleanField(default=False)
+    
     questions = models.ManyToManyField(Question)
 
     user_score = models.IntegerField(default=0)
@@ -73,6 +75,10 @@ class UserChallenge(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    created_challenge_message_id = models.CharField(max_length=1024, null = True)
+    created_challenge_chat_id = models.CharField(max_length=1024, null = True)
+    
+    
     def user_duration(self):
         difference = self.user_finished_at-self.user_started_at
         difference = difference.total_seconds()
@@ -86,33 +92,21 @@ class UserChallenge(models.Model):
         difference = difference.total_seconds()
         difference = int(difference)
         
-        # if difference//60==0:
-        #     minutes = 0
-        #     seconds = difference
-        #     self.opponent_duration = f"{difference} sekund"
-        # elif difference//60>0:
-        #     minutes = difference//60
-        #     seconds = difference%60
-        #     self.opponent_duration = f"{minutes} daqiqayu {seconds} sekund"
-        
-        
-          
+  
         return difference
         
 
     def update_score(self, type):
         if type == 'user':
-            
             score = UserChallengeAnswer.objects.filter(user_challenge=self).filter(user=self.user).filter(is_correct=True).count()
             self.user_score = int(score)
             
         elif type == "opponent":
             score = UserChallengeAnswer.objects.filter(user_challenge=self).filter(user=self.opponent).filter(is_correct=True).count()
-
             self.opponent_score = int(score)
             
             
-        print(f"update score ni ichiga kirdi\nuser----{self.user_score}\nopponent---{self.opponent_score}")
+        # print(f"update score ni ichiga kirdi\nuser----{self.user_score}\nopponent---{self.opponent_score}")
 
         # print(f"score-----{score}")
 

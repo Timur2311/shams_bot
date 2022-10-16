@@ -40,15 +40,11 @@ def setup_dispatcher(dp):
     # inline_mode
     dp.add_handler(InlineQueryHandler(challenge_handlers.inlinequery))
     dp.add_handler(CallbackQueryHandler(
-        challenge_handlers.challenge_callback, pattern=r"challenge-received-"))
-    # dp.add_handler()
+        challenge_handlers.challenge_callback, pattern=r"received-"))
     dp.add_handler(CallbackQueryHandler(
         challenge_handlers.user_check, pattern=r"check-"))
-    # EXAM HANDLERS
     # dp.add_handler(CallbackQueryHandler(
-    #     exam_handler.exam_callback, pattern=r"passing-test-"))
-    # dp.add_handler(CallbackQueryHandler(
-    #     exam_handler.exam_confirmation, pattern=r"test-confirmation-"))
+    # challenge_handlers.random_opponent, pattern="^"+consts.RANDOM_OPPONENT))
 
     # handling errors
     dp.add_error_handler(error.send_stacktrace_to_tg_chat)
@@ -78,6 +74,8 @@ def setup_dispatcher(dp):
 
             CallbackQueryHandler(
             onboarding_handlers.home_page, pattern=r"home-page"),
+            CallbackQueryHandler(
+            challenge_handlers.revansh, pattern=r"revansh-"),
 
             CallbackQueryHandler(
             challenge_handlers.challenge_confirmation, pattern=r"challenge-confirmation-")
@@ -114,11 +112,17 @@ def setup_dispatcher(dp):
                 CallbackQueryHandler(
                 onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
                 CallbackQueryHandler(
+                challenge_handlers.challenge_callback, pattern=r"received-"),
+                CallbackQueryHandler(
                 challenge_handlers.challenge_confirmation, pattern=r"challenge-confirmation-"),
                 CallbackQueryHandler(
                     challenge_handlers.challenge_handler, pattern=r"question-variant-"),
                 MessageHandler(Filters.text(consts.BACK),
                                onboarding_handlers.back_to_home_page),
+                CallbackQueryHandler(
+                onboarding_handlers.home_page, pattern=r"home-page"),
+                CallbackQueryHandler(
+                challenge_handlers.random_opponent, pattern="^"+consts.RANDOM_OPPONENT)
             ],
             consts.LEADERBOARD: [],
             consts.CONTACTING: [],

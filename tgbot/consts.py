@@ -27,7 +27,7 @@ ADD_TASK = "Vazifa qo'shish➕"
 SHARE = "Do'stlar bilan ulashish🔗"
 RANDOM_OPPONENT = "Tasodifiy raqib bilan"
 
-ACCEPT = "Challenge ga qo'shilish🤝"
+ACCEPT = "Bellashuvni qabul qilish🤝"
 DECLINE = "Rad etish❌"
 
 

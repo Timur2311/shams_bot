@@ -149,7 +149,7 @@ def exam_confirmation(update: Update, context: CallbackContext) -> None:
                 f"Test boshlandi!\n\n Testlar soni: {counter} ta", reply_markup=ReplyKeyboardRemove())
 
             helpers.send_test(update=update, context=context,
-                              question=question, user_exam=user_exam)
+                              question=question, user_exam=user_exam, user=user)
 
         elif counter == 0:
             query.delete_message()
@@ -182,7 +182,7 @@ def exam_handler(update: Update, context: CallbackContext):
     question = user_exam.last_unanswered_question()
     if question:
         helpers.send_test(update=update, context=context,
-                          question=question, user_exam=user_exam)
+                          question=question, user_exam=user_exam, user=user)
 
     else:
         score = user_exam.update_score()
