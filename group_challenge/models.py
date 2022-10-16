@@ -78,6 +78,12 @@ class UserChallenge(models.Model):
     created_challenge_message_id = models.CharField(max_length=1024, null = True)
     created_challenge_chat_id = models.CharField(max_length=1024, null = True)
     
+    user_message_id = models.CharField(max_length=1024, null = True)
+    opponent_message_id = models.CharField(max_length=1024, null = True)
+    user_chat_id = models.CharField(max_length=1024, null = True)
+    opponent_chat_id = models.CharField(max_length=1024, null = True)
+    
+    
     
     def user_duration(self):
         difference = self.user_finished_at-self.user_started_at

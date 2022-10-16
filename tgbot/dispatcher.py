@@ -54,10 +54,14 @@ def setup_dispatcher(dp):
                        exam_handler.passing_test),
         MessageHandler(Filters.text(static_texts.CHALLENGE),
                        challenge_handlers.challenges_list),
+        MessageHandler(Filters.text(static_texts.LEADER),
+                       challenge_handlers.leader),
         CallbackQueryHandler(
             onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
         CallbackQueryHandler(
             onboarding_handlers.home_page, pattern=r"home-page"),
+        CallbackQueryHandler(
+            challenge_handlers.revansh, pattern=r"revansh-"),
         CallbackQueryHandler(
             challenge_handlers.challenge_confirmation, pattern=r"challenge-confirmation-"),
 
@@ -71,6 +75,8 @@ def setup_dispatcher(dp):
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler(
             'start', onboarding_handlers.command_start),
+            CallbackQueryHandler(
+            challenge_handlers.revansh, pattern=r"revansh-"),
 
             CallbackQueryHandler(
             onboarding_handlers.home_page, pattern=r"home-page"),
@@ -120,11 +126,14 @@ def setup_dispatcher(dp):
                 MessageHandler(Filters.text(consts.BACK),
                                onboarding_handlers.back_to_home_page),
                 CallbackQueryHandler(
+                challenge_handlers.revansh, pattern=r"revansh-"),
+                CallbackQueryHandler(
                 onboarding_handlers.home_page, pattern=r"home-page"),
                 CallbackQueryHandler(
                 challenge_handlers.random_opponent, pattern="^"+consts.RANDOM_OPPONENT)
             ],
-            consts.LEADERBOARD: [],
+            consts.LEADERBOARD: [MessageHandler(Filters.text(consts.BACK),
+                               onboarding_handlers.back_to_home_page),],
             consts.CONTACTING: [],
         },
         fallbacks=[],

@@ -132,7 +132,7 @@ class Exam(models.Model):
 
 class UserExam(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name = "user_exams")
     questions = models.ManyToManyField(Question)  # editable=False
     score = models.IntegerField(default=0)
     start_datetime = models.DateTimeField(auto_now_add=True)

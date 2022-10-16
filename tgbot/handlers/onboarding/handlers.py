@@ -9,6 +9,8 @@ from tgbot.models import User
 from tgbot.handlers.onboarding.keyboards import make_keyboard_for_start_command
 from tgbot import consts
 
+from group_challenge.models import UserChallenge
+
 from utils.check_subscription import check_subscription
 
 
@@ -79,18 +81,34 @@ def checking_subscription(update: Update, context: CallbackContext):
 def home_page(update: Update, context: CallbackContext):
     data = update.callback_query.data.split("-")
     user_id = data[2]
+    user, _ = User.get_user_and_created(update, context)
     
-    if context.bot_data[f"{user_id}"]:
-        message_id = context.bot_data[f"{user_id}"]["ended_challenge"][0]
+    
+    
+    # if len(data)==4:
+    #     user_challenge = UserChallenge.objects.get(id=int(data[3]))
+    #     if user_challenge.user.user_id == user_id:
+    #         message_id = user_challenge.user_message_id
+    #         chat_id = user_challenge.user_chat_id
+    #     else:
+    #         message_id = user_challenge.opponent_message_id
+    #         chat_id = user_challenge.opponent_chat_id
+    #     context.bot.delete_message(
+    #     message_id=message_id, chat_id=chat_id)
+    # else:
+    #     message_id = context.user_data["message_id"]
+    #     context.bot.delete_message(
+    #     message_id=message_id, chat_id=update.callback_query.message.chat_id)
+    
+    
+    if user.name == "IsmiGul":
+        text = "Siz botda IsmiGul bo'lib qolib ketibsiz , iltimos asl ismingizni kiriting yoki shundayligicha davom ettirish uchun quyidagilardan birini tanlang⬇️"
     else:
-        message_id = context.user_data["message_id"]
-
+        text = "Quyidagilardan birini tanlang⬇️"
     
-    
-    context.bot.delete_message(
-        message_id=message_id, chat_id=update.callback_query.message.chat_id)
-    context.bot.send_message(chat_id=user_id, text="Quyidagilardan birini tanlang⬇️",
+    context.bot.send_message(chat_id=user_id, text=text,
                              reply_markup=make_keyboard_for_start_command())
+        
 
     return consts.SELECTING_ACTION
 

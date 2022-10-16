@@ -90,15 +90,6 @@ def back_to_exam_stage(update: Update, context: CallbackContext):
     pass
 
 
-def leader(update: Update, context: CallbackContext) -> None:
-    user_exams = UserExam.objects.all().order_by("-score")
-    text = ""
-    for index, user_exam in enumerate(user_exams):
-        text += f"{index+1}. {user_exam.user} -  {user_exam.exam.title} - {user_exam.score} \n"
-    update.message.reply_text(
-        text=text)
-
-
 def exam_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     data = update.callback_query.data.split("-")
@@ -190,7 +181,7 @@ def exam_handler(update: Update, context: CallbackContext):
         user_exam.save()
         update.callback_query.delete_message()
         context.bot.send_message(
-            user.user_id, f"Imtihon tugadi.\n\nTo'g'ri javoblar soni: {score} ta", reply_markup=make_keyboard_for_start_command())
+            user.user_id, f"Imtihon tugadi.\n\nTo'g'ri javoblar soni: {score} ta", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Testlarga qaytish", callback_data=f"stage-exams-{user.user_id}-{user_exam.exam.stage}")]]))
 
     return consts.PASS_TEST
 

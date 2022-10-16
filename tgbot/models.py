@@ -1,4 +1,5 @@
 from __future__ import annotations
+from email.policy import default
 
 from typing import Union, Optional, Tuple
 
@@ -32,6 +33,14 @@ class User(CreateUpdateTracker):
 
     objects = GetOrNoneManager()  # user = User.objects.get_or_none(user_id=<some_id>)
     admins = AdminUserManager()  # User.admins.all()
+
+    score = models.IntegerField(default=0)
+    
+    def set_user_score(self):
+        user_exams = self.user_exams.all()
+        for user_exam in user_exams:
+            self.score+=user_exam.score
+        
 
     def __str__(self):
         return f'@{self.username}' if self.username is not None else f'{self.user_id}'
@@ -75,6 +84,9 @@ class User(CreateUpdateTracker):
             return f'@{self.username}'
         return f"{self.first_name} {self.last_name}" if self.last_name else f"{self.first_name}"
 
+
+
+    
 
 class Location(CreateTracker):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
