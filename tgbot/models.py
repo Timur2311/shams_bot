@@ -35,11 +35,16 @@ class User(CreateUpdateTracker):
     admins = AdminUserManager()  # User.admins.all()
 
     score = models.IntegerField(default=0)
+    region = models.CharField(max_length = 32, null=True)
     
     def set_user_score(self):
-        user_exams = self.user_exams.all()
+        user_exams = self.as_owner.all()
         for user_exam in user_exams:
-            self.score+=user_exam.score
+            self.score+=user_exam.user_score
+        user_challenges = self.as_opponent.all()
+        
+        for user_challenge in user_challenges:
+            self.score+=user_challenge.opponent_score
         
 
     def __str__(self):

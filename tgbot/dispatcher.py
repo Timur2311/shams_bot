@@ -56,6 +56,8 @@ def setup_dispatcher(dp):
                        challenge_handlers.challenges_list),
         MessageHandler(Filters.text(static_texts.LEADER),
                        challenge_handlers.leader),
+        MessageHandler(Filters.text(static_texts.CONTACTUS),
+                       onboarding_handlers.contactus),
         CallbackQueryHandler(
             onboarding_handlers.checking_subscription, pattern=r"checking-subscription-"),
         CallbackQueryHandler(
@@ -134,7 +136,10 @@ def setup_dispatcher(dp):
             ],
             consts.LEADERBOARD: [MessageHandler(Filters.text(consts.BACK),
                                onboarding_handlers.back_to_home_page),],
-            consts.CONTACTING: [],
+            consts.CONTACTING:[MessageHandler(Filters.text(consts.BACK),
+                               onboarding_handlers.back_to_home_page),],
+            consts.REGION: [MessageHandler(Filters.text & ~Filters.command,
+                       onboarding_handlers.region),],
         },
         fallbacks=[],
     )
