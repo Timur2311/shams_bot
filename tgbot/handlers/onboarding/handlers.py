@@ -146,5 +146,5 @@ def back_to_home_page(update: Update, context: CallbackContext):
     return consts.SELECTING_ACTION
 
 def contactus(update: Update, context: CallbackContext):
-    update.message.reply_text("Bu yerda username bo'ladi", reply_markup=ReplyKeyboardMarkup([[consts.BACK]], resize_keyboard=True, one_time_keyboard=True))
+    update.message.reply_text("Bu yerda username bo'ladi", reply_markup=ReplyKeyboardMarkup([[consts.BACK]], resize_keyboard=True))
     return consts.CONTACTING

@@ -8,7 +8,7 @@ def make_keyboard_for_start_command() -> ReplyKeyboardMarkup:
         [LEADER, CONTACTUS]
     ]
 
-    return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 def make_keyboard_for_regions() -> ReplyKeyboardMarkup:
     buttons = [
@@ -22,4 +22,4 @@ def make_keyboard_for_regions() -> ReplyKeyboardMarkup:
     
     
 
-    return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)

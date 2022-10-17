@@ -38,7 +38,7 @@ def passing_test(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Quyidagi bosqichlardan birini tanlang", reply_markup=ReplyKeyboardMarkup([
         [consts.FIRST], [consts.SECOND], [consts.THIRD], [
             consts.FOURTH], [consts.FIFTH], [consts.BACK]
-    ], resize_keyboard=True, one_time_keyboard=True))
+    ], resize_keyboard=True))
 
     return consts.PASS_TEST
 

@@ -430,7 +430,7 @@ def leader(update: Update, context: CallbackContext) -> None:
     for index,leader_user in enumerate(leader_users):
         text+=f"\n{index+1}) {leader_user.name} - {leader_user.score}"
     
-    update.message.reply_text(text = text, reply_markup = ReplyKeyboardMarkup([[consts.BACK]], resize_keyboard=True, one_time_keyboard=True))
+    update.message.reply_text(text = text, reply_markup = ReplyKeyboardMarkup([[consts.BACK]], resize_keyboard=True))
 
     return consts.LEADERBOARD
 
