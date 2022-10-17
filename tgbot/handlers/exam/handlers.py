@@ -1,10 +1,7 @@
 
-from email import message
-from re import L
-from turtle import up
-from django.utils import timezone
+
 from telegram import ParseMode, Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext
 from tgbot import consts
 
 from tgbot.handlers.exam import static_text
