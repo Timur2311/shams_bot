@@ -283,19 +283,19 @@ def challenge_handler(update: Update, context: CallbackContext):
                 user_time = helpers.get_duration(user_duration)
                 opponent_time = helpers.get_duration(opponent_duration)
                 
-                print(f"\n\nuser_score----{user_challenge.user_score}\n{type(user_challenge.user_score)}\n\nopponent_score----{user_challenge.opponent_score}\n{type(user_challenge.opponent_score)}\n\n")
+                # print(f"\n\nuser_score----{user_challenge.user_score}\n{type(user_challenge.user_score)}\n\nopponent_score----{user_challenge.opponent_score}\n{type(user_challenge.opponent_score)}\n\n")
                 
                 if user_challenge.user_score>user_challenge.opponent_score:
-                    print("birinchi if ga kirdi")
+                    # print("birinchi if ga kirdi")
 
                     text += f"\n<a href='tg://user?id={user_challenge.user.user_id}'>{user_challenge.user.name}</a>:👑{user_challenge.user_score}/10  ⏳{user_time}\n<a href='tg://user?id={user_challenge.opponent.user_id}'>{user_challenge.opponent.name}</a>:😭{user_challenge.opponent_score}/10  ⏳{opponent_time}"
                 elif user_challenge.user_score<user_challenge.opponent_score:
                     text += f"\n<a href='tg://user?id={user_challenge.opponent.user_id}'>{user_challenge.opponent.name}</a>:👑{user_challenge.opponent_score}/10  ⏳{opponent_time}\n<a href='tg://user?id={user_challenge.user.user_id}'>{user_challenge.user.name}</a>:😭{user_challenge.user_score}/10  ⏳{user_time}"
                 elif user_challenge.user_score==user_challenge.opponent_score:
-                    print("ikkinchi if ga kirdi")
+                    # print("ikkinchi if ga kirdi")
 
                     if user_duration<opponent_duration:
-                        print("uchinchi if ga kirdi")
+                        # print("uchinchi if ga kirdi")
 
                         text += f"\n<a href='tg://user?id={user_challenge.user.user_id}'>{user_challenge.user.name}</a>:👑{user_challenge.user_score}/10  ⏳{user_time}\n<a href='tg://user?id={user_challenge.opponent.user_id}'>{user_challenge.opponent.name}</a>:😭{user_challenge.opponent_score}/10  ⏳{opponent_time}"
                     elif user_duration>opponent_duration:
@@ -340,17 +340,17 @@ def challenge_handler(update: Update, context: CallbackContext):
                 opponent_duration = user_challenge.opponent_duration()
                 user_time = helpers.get_duration(user_duration)
                 opponent_time = helpers.get_duration(opponent_duration)
-                print(f"\n\nuser_score----{user_challenge.user_score}\n{type(user_challenge.user_score)}\n\nopponent_score----{user_challenge.opponent_score}\n{type(user_challenge.opponent_score)}\n\n")
+                # print(f"\n\nuser_score----{user_challenge.user_score}\n{type(user_challenge.user_score)}\n\nopponent_score----{user_challenge.opponent_score}\n{type(user_challenge.opponent_score)}\n\n")
                 
                 if user_challenge.user_score>user_challenge.opponent_score:
-                    print("birinchi if ga kirdi")
+                    # print("birinchi if ga kirdi")
                     text += f"\n<a href='tg://user?id={user_challenge.user.user_id}'>{user_challenge.user.name}</a>:👑{user_challenge.user_score}/10  ⏳{user_time}\n<a href='tg://user?id={user_challenge.opponent.user_id}'>{user_challenge.opponent.name}</a>:😭{user_challenge.opponent_score}/10  ⏳{opponent_time}"
                 elif user_challenge.user_score<user_challenge.opponent_score:
                     text += f"\n<a href='tg://user?id={user_challenge.opponent.user_id}'>{user_challenge.opponent.name}</a>:👑{user_challenge.opponent_score}/10  ⏳{opponent_time}\n<a href='tg://user?id={user_challenge.user.user_id}'>{user_challenge.user.name}</a>:😭{user_challenge.user_score}/10  ⏳{user_time}"
                 elif user_challenge.user_score==user_challenge.opponent_score:
-                    print("ikkinchi if ga kirdi")
+                    # print("ikkinchi if ga kirdi")
                     if user_duration<opponent_duration:
-                        print("uchinchi if ga kirdi")
+                        # print("uchinchi if ga kirdi")
                         text += f"\n<a href='tg://user?id={user_challenge.user.user_id}'>{user_challenge.user.name}</a>:👑{user_challenge.user_score}/10  ⏳{user_time}\n<a href='tg://user?id={user_challenge.opponent.user_id}'>{user_challenge.opponent.name}</a>:😭{user_challenge.opponent_score}/10  ⏳{opponent_time}"
                     elif user_duration>opponent_duration:
                         text += f"\n<a href='tg://user?id={user_challenge.opponent.user_id}'>{user_challenge.opponent.name}</a>:👑{user_challenge.opponent_score}/10  ⏳{opponent_time}\n<a href='tg://user?id={user_challenge.user.user_id}'>{user_challenge.user.name}</a>:😭{user_challenge.user_score}/10  ⏳{user_time}"
