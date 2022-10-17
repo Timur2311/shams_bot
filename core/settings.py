@@ -28,7 +28,7 @@ if os.environ.get('DJANGO_DEBUG', default=False) in ['True', 'true', '1', True]:
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = ["127.0.0.1","shamuel.uz"]  # since Telegram uses a lot of IPs for webhooks
+ALLOWED_HOSTS = ["127.0.0.1","http://shamuel.uz/"]  # since Telegram uses a lot of IPs for webhooks
 
 
 INSTALLED_APPS = [
