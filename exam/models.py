@@ -1,4 +1,5 @@
 
+from email.policy import default
 from django.db import models
 
 from tgbot.models import User
@@ -166,8 +167,9 @@ class UserExam(models.Model):
 class UserExamAnswer(models.Model):
     user_exam = models.ForeignKey(
         UserExam, on_delete=models.CASCADE, related_name="answer")
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    option_ids = models.CharField(max_length=255, null=True)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name = "user_exam_anwer")
+    option_id = models.IntegerField(default=0)
+    number = models.CharField(max_length = 16, null=True)
     answered = models.BooleanField(default=False)
     is_correct = models.BooleanField(default=False)
     

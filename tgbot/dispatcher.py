@@ -112,6 +112,8 @@ def setup_dispatcher(dp):
                     onboarding_handlers.home_page, pattern=r"home-page"),
                 MessageHandler(Filters.text(consts.BACK),
                                onboarding_handlers.back_to_home_page),
+                CallbackQueryHandler(
+                    exam_handler.comments, pattern=r"comments-"),
 
             ],
             consts.SHARING_CHALLENGE: [MessageHandler(Filters.regex("[-bosqich]+$"), challenge_handlers.stage_exams),
@@ -135,11 +137,17 @@ def setup_dispatcher(dp):
                 challenge_handlers.random_opponent, pattern="^"+consts.RANDOM_OPPONENT)
             ],
             consts.LEADERBOARD: [MessageHandler(Filters.text(consts.BACK),
-                               onboarding_handlers.back_to_home_page),],
-            consts.CONTACTING:[MessageHandler(Filters.text(consts.BACK),
-                               onboarding_handlers.back_to_home_page),],
+                                                onboarding_handlers.back_to_home_page), ],
+            consts.CONTACTING: [MessageHandler(Filters.text(consts.BACK),
+                                               onboarding_handlers.back_to_home_page), ],
             consts.REGION: [MessageHandler(Filters.text & ~Filters.command,
-                       onboarding_handlers.region),],
+                                           onboarding_handlers.region), ],
+            consts.COMMENTS: [CallbackQueryHandler(
+                exam_handler.comments, pattern=r"comments-"),
+                CallbackQueryHandler(
+                exam_handler.answer, pattern=r"answer-"),
+                CallbackQueryHandler(
+                exam_handler.stage_exams, pattern=r"stage-exams-")]
         },
         fallbacks=[],
     )

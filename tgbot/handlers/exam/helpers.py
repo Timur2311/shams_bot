@@ -1,6 +1,8 @@
 from telegram import ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
 from tgbot.models import User
 
+from exam.models import UserExamAnswer
+
 def send_test(update, context, question, user_exam, user):
     
 
@@ -9,6 +11,11 @@ def send_test(update, context, question, user_exam, user):
     text = f"<b>Savol:</b> {question.content}\n"
     variants = ["A", "B", "C"]
     buttons = []
+    
+    user_exam_answer = UserExamAnswer.objects.get(user_exam = user_exam, question=question)
+    user_exam_answer.number = str(number_of_test)
+   
+    user_exam_answer.save()
     
     for index, question_option in enumerate(question.options.order_by("?")):
             text += f"\n<b>{variants[index]}</b>) {question_option.content}"

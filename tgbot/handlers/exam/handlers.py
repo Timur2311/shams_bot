@@ -164,6 +164,7 @@ def exam_handler(update: Update, context: CallbackContext):
     user_exam = UserExam.objects.get(id=user_exam_id)
 
     user_exam_answer.is_correct = question_option.is_correct
+    user_exam_answer.option_id = question_option.id
     user_exam_answer.answered = True
     user_exam_answer.save()
 
@@ -178,10 +179,55 @@ def exam_handler(update: Update, context: CallbackContext):
         user_exam.save()
         update.callback_query.delete_message()
         context.bot.send_message(
-            user.user_id, f"Imtihon tugadi.\n\nTo'g'ri javoblar soni: {score} ta", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Testlarga qaytish", callback_data=f"stage-exams-{user.user_id}-{user_exam.exam.stage}")]]))
+            user.user_id, f"Imtihon tugadi.\n\nTo'g'ri javoblar soni: {score} ta\n\nNoto'g'ri berilgan javoblaringizning izohlarini ko'rish uchun \"Izoh\" tugmasini bosing yoki \"Testlarga qaytish\" tugmasi orqali bilimingizni oshirishda davom eting!", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Testlarga qaytish", callback_data=f"stage-exams-{user.user_id}-{user_exam.exam.stage}")], [InlineKeyboardButton("Izoh", callback_data=f"comments-{user_exam.id}-{user_exam.user.user_id}")]]))
 
     return consts.PASS_TEST
 
+
+
+def comments(update: Update, context: CallbackContext):
+    query = update.callback_query
+    data = query.data.split("-")
+    user_exam_id = data[1]
+    user_id = data[2]
+    
+    user_exam = UserExam.objects.get(id = int(user_exam_id))
+    
+    user_exam_answers = UserExamAnswer.objects.filter(user_exam__id = int(user_exam_id)).filter(is_correct=False)
+    
+    buttons = []
+    
+    for user_exam_answer in user_exam_answers:
+        buttons.append([InlineKeyboardButton(f"{user_exam_answer.number}-savol", callback_data=f"answer-{user_exam_answer.id}-{user_id}-{user_exam_id}")])
+    
+    buttons.append([InlineKeyboardButton("Testlarga qaytish", callback_data=f"stage-exams-{user_id}-{user_exam.exam.stage}")])
+    
+    query.edit_message_text("Noto'g'ri javob berilgan savollar ro'yxati: ", reply_markup=InlineKeyboardMarkup(buttons))
+    
+    return consts.COMMENTS
+
+def answer(update: Update, context: CallbackContext):
+    query = update.callback_query
+    data = query.data.split("-")
+    user_exam_answer_id = data[1]
+    user_id = data[2]
+    user_exam_id = data[3]
+    user_exam = UserExam.objects.get(id = int(user_exam_id))
+    
+    user_exam_answer = UserExamAnswer.objects.get(id = int(user_exam_answer_id))
+    question_option = QuestionOption.objects.get(id = user_exam_answer.option_id)
+    question = user_exam_answer.question
+    true_answer = question.options.get(is_correct=True)
+    
+    
+    
+    query.edit_message_text(f"<b>Savol:</b> {question.content} \n\n<b>Siz bergan javob:</b> {question_option.content} \n\n <b>To'g'ri javob:</b> {true_answer.content} \n\n <b>Izoh: </b>{question.true_definition} ", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(consts.BACK, callback_data=f"comments-{user_exam_id}-{user_exam.user.user_id}")], [InlineKeyboardButton("Testlarga qaytish", callback_data=f"stage-exams-{user_id}-{user_exam.exam.stage}")]]), parse_mode = ParseMode.HTML)
+    
+    
+    
+    
+    
+    return consts.COMMENTS
 
 def poll_handler(update: Update, context: CallbackContext) -> None:
     # print("\n\n\poll handlerga kirdi \n\n")

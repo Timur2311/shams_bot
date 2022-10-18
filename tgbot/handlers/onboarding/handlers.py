@@ -14,13 +14,15 @@ from utils.check_subscription import check_subscription
 
 def command_start(update: Update, context: CallbackContext) -> None:
     u, created = User.get_user_and_created(update, context)
+    
     chat_member = context.bot.get_chat_member(
-        consts.CHANNEL_USERNAME, u.user_id)
+        consts.CHANNEL_USERNAME, update.message.from_user.id)
     
     context.user_data["not_subscribed"] = False
     context.user_data['counter'] = 0
+    # tem = False
     
-    if chat_member['status'] == "left":
+    if chat_member['status'] == "left" :
         check_subscription(update,context, u)
     else:
         if created:
